@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  lula-bot:
+    build: .
+    container_name: lula_brain
+    restart: always  # Si falla, se reinicia solo. ¡Vital para trading!
+    
+    # --- ACCESO AL HARDWARE (NPU) ---
+    devices:
+      - /dev/rknpu:/dev/rknpu   # La NPU
+      - /dev/rga:/dev/rga       # Acelerador gráfico (opcional, pero útil)
+    privileged: true            # A veces necesario para acceso total al hardware
+
+    # Variables de entorno
+    env_file:
+      - .env
+    
+    # Volúmenes (Para guardar logs y datos fuera del contenedor)
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      # Si quieres editar código sin reconstruir la imagen, descomenta esto:
+      # - ./lula.py:/app/lula.py 
+
+    # Configuración de red (opcional, por defecto tiene internet)
+    network_mode: bridge

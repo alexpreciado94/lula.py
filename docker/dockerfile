@@ -1,0 +1,31 @@
+# Usamos Python 3.9 Slim (ligero y compatible con RKNN)
+FROM python:3.9-slim
+
+# Evitar que Python genere archivos .pyc y buffer de salida
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Instalar dependencias del sistema (necesarias para compilar algunas libs)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libhdf5-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# 1. Instalar librerías generales
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 2. Instalar el driver de la NPU (RKNN Lite)
+# Copiamos la carpeta libs al contenedor
+COPY libs/ libs/
+# Instalamos el .whl que tengas ahí (el asterisco busca cualquiera)
+RUN pip install libs/rknn_toolkit_lite2*.whl
+
+# 3. Copiar el resto del código
+COPY . .
+
+# Comando por defecto al iniciar
+CMD ["python", "lula.py"]

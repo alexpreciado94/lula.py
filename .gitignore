@@ -205,3 +205,22 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ==============================
+# REGLAS ESPECÍFICAS DE LULA.PY
+# ==============================
+
+# --- Seguridad (CRÍTICO: Verifica que esto no se suba) ---
+.env
+keys/
+secrets.py
+
+# --- Logs del Bot ---
+*.log
+logs/
+
+# --- Datos de Trading (No ensuciar el repo con CSVs gigantes) ---
+*.csv
+*.xlsx
+data/
+backtest_results/
