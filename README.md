@@ -16,6 +16,11 @@ Test de Conexión
 1. Instala las Dependencias en la Orange Pi: pip install ccxt python-dotenv
 2. Ejecuta el Test: python3 connection_test.py
 
-Entrenamiento en PC
-1. Instalar Dependencias en PC: pip install -r trainer_requirements.txt
-2. Ejecutar Entrenador: python trainer.py
+Entrenamiento en PC - Optimizado para Kali Linux
+1. Instalar Dependencias del Sistema: sudo apt install -y python3-dev python3-pip python3-venv libxslt1-dev zlib1g-dev libgl1-mesa-glx
+2. Crea un Entorno Virtual: python3 -m venv venv
+3. Activa el Entorno Virtual: source venv/bin/activate
+4. Instalar Dependencias: pip install -r trainer_requirements.txt
+5. Ejecutar Entrenador: python trainer.py
+
+Para obtener el .rknn final, se recomienda instalar el RKNN Toolkit 2 en un Linux x86. Con este script, ya tienes el 90% del trabajo hecho automáticamente. Si todo sale bien, el script generará directamente el archivo .rknn alimentado. Tras esto, puedes borrar el archivo .onnx que ya no vale para nada.
