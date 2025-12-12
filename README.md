@@ -4,11 +4,10 @@ Made with LOVE for Orange Pi 5 Max. 🐼
 
 (Blessed by Sor. Concha) #CypherPunk
 
-Cómo usar este script  
-Conéctate por SSH a tu Orange Pi.  
-chmod +x install.sh
+Cómo usar este script???
 
-Ejecútalo como superusuario:  
-sudo ./install.sh
+1. Conéctate por SSH a tu Orange Pi: ssh -vvv root@000.000.0.0
+2. Añade permisos de Ejecución: chmod +x install.sh
+3. Ejecútalo como superusuario: sudo ./install.sh
 
 Una vez termine el script, solo tendrás que usar FileZilla para pasar tus archivos de código dentro de la carpeta lula_project que se habrá creado sola.
