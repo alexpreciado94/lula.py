@@ -14,4 +14,4 @@ Una vez termine el script, solo tendrás que usar FileZilla para pasar tus archi
 
 Test de Conexión
 1. Instala las Dependencias en la Orange Pi: pip install ccxt python-dotenv
-2. Ejecuta el Test: python3 conexion_test.py
+2. Ejecuta el Test: python3 connection_test.py
