@@ -1,6 +1,6 @@
 # lula.py
 Artificial Intelligence for CryptoTrading - Expert of Monero  
-Made with LOVE for Orange Pi 5 Max. 🐼
+Made with LOVE for Orange Pi 5 Max. [Python 3.9] 🐼
 
 (Blessed by Sor. Concha) #CypherPunk
 
