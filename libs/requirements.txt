@@ -3,5 +3,6 @@ pandas
 pandas_ta
 numpy
 joblib
-cryptography
+scikit-learn
 python-dotenv
+yfinance
