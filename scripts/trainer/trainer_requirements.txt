@@ -1,0 +1,9 @@
+tensorflow
+tf2onnx
+onnx
+pandas
+pandas_ta
+ccxt
+scikit-learn
+joblib
+# rknn-toolkit2
