@@ -1,76 +1,80 @@
-# --- CONFIGURACIÓN DE ESTRATEGIA ---
-GENERATOR_COINS = ['SOL/USD', 'ETH/USD', 'BTC/USD']
-TARGET_COIN = 'XMR/USD'
+# --- CONFIGURACIÓN ---
+GENERATOR_COINS = ['SOL/USDT', 'ETH/USDT', 'BTC/USDT'] # En Exchange A
+TARGET_COIN = 'XMR/USDT'                               # En Exchange B
 
-# Reglas de Seguridad
-MAX_XMR_PERCENT = 0.40         
-MIN_CASH_RESERVE = 100.0          
-MIN_XMR_BUY_SIZE = 15.0             
+# Ajustes Trezor
+MIN_XMR_TO_WITHDRAW = 0.5  # No retirar migajas para no pagar fees tontos
+TREZOR_ADDRESS = None      # Se carga desde .env en main
 
-def manage_wealth(connection, xmr_price, brain_score, xmr_rsi):
+def manage_cold_storage(connection):
     """
-    Decide si coge el exceso de liquidez y compra Monero.
+    Fase final: Vaciar el Exchange B hacia el Trezor.
     """
-    balance = connection.get_balance()
+    from os import getenv
+    trezor_addr = getenv('TREZOR_XMR_ADDRESS')
+    if not trezor_addr: return
+
+    # Miramos saldo en el Exchange de Refugio (self.safe)
+    balance = connection.get_balance(connection.safe)
     if not balance: return
-
-    # 1. Normalizar nombres de Kraken
-    usd_total = balance.get('USD', {}).get('total', 0)
-    if usd_total == 0: usd_total = balance.get('ZUSD', {}).get('total', 0)
     
-    xmr_total = balance.get('XMR', {}).get('total', 0)
-    if xmr_total == 0: xmr_total = balance.get('XXMR', {}).get('total', 0)
-
-    total_wealth_usd = usd_total + (xmr_total * xmr_price)
-
-    if total_wealth_usd == 0: return 
-
-    current_xmr_pct = (xmr_total * xmr_price) / total_wealth_usd
-
-    print(f"   💼 Patrimonio Total: ${total_wealth_usd:.2f}")
-    print(f"   📊 Estado XMR:       {current_xmr_pct*100:.1f}% (Límite: {MAX_XMR_PERCENT*100}%)")
-    print(f"   💵 Liquidez (USD):   ${usd_total:.2f}")
-
-    # Regla A: Techo de Ahorro
-    if current_xmr_pct >= MAX_XMR_PERCENT:
-        print("   ✋ Límite de XMR alcanzado. Acumulando USD.")
-        return
-
-    # Regla B: Excedente de Liquidez
-    surplus = usd_total - MIN_CASH_RESERVE
-    if surplus < MIN_XMR_BUY_SIZE:
-        print("   🌱 Capital creciendo (Aún no hay excedente para ahorrar).")
-        return
-
-    # Regla C: Oportunidad de Mercado
-    is_good_time = (xmr_rsi < 35) or (brain_score > 0.85)
-
-    if is_good_time:
-        print(f"   🧸 Oportunidad detectada (Brain: {brain_score:.2f} | RSI: {xmr_rsi:.1f})")
-        print(f"   💸 Invirtiendo excedente (${surplus:.2f}) en Monero...")
-        
-        xmr_amount = surplus / xmr_price
-        connection.execute_order(TARGET_COIN, 'market', 'buy', xmr_amount)
+    xmr_free = balance.get('XMR', {}).get('free', 0)
+    
+    if xmr_free > MIN_XMR_TO_WITHDRAW:
+        print(f"   ❄️ BÓVEDA: Detectados {xmr_free:.4f} XMR listos para frío.")
+        # Retiramos TODO menos una migaja para fees
+        amount = xmr_free - 0.001 
+        connection.withdraw_to_trezor('XMR', amount, trezor_addr)
     else:
-        print("   ⏳ Precio de XMR no es óptimo. Esperando mejor oportunidad.")
+        print(f"   🧊 Acumulando XMR ({xmr_free:.4f}/{MIN_XMR_TO_WITHDRAW}).")
 
-def operate_speculation(connection, brain, symbol):
+def strategy_generator(connection, brain, symbol, sp500):
     """
-    Analiza una moneda generadora y opera solo si la señal es MUY clara.
+    Lógica Agresiva para Exchange A (Binance).
+    Objetivo: Generar USDT.
     """
-    data = connection.get_data(symbol)
+    # Usamos el exchange GEN
+    data = connection.get_data(connection.gen, symbol)
     if not data: return
 
-    prob, rsi, price = brain.analyze(data)
+    prob, rsi, price, _ = brain.analyze(data, sp500)
     if prob is None: return
 
-    print(f"   🔹 {symbol}: ${price} | Brain Score: {prob:.2f} | RSI: {rsi:.1f}")
+    print(f"   ⚡ GEN {symbol}: ${price} | IA: {prob:.2f}")
 
-    # Lógica conservadora: Solo entrar si la probabilidad es > 90%
-    if prob > 0.90:
-        print(f"   🚀 SEÑAL FUERTE DE COMPRA en {symbol}.")
-        # connection.execute_order(symbol, 'market', 'buy', amount...)
+    # COMPRA AGRESIVA
+    if prob > 0.92:
+        print(f"   🚀 COMPRA GENERADORA: {symbol}")
+        # connection.execute_order(connection.gen, symbol, 'buy', ...)
     
-    elif prob < 0.20:
-         print(f"   📉 SEÑAL DE VENTA en {symbol}.")
-         # connection.execute_order(symbol, 'market', 'sell', amount...)
+    # VENTA RÁPIDA (Take Profit)
+    elif prob < 0.30:
+        print(f"   💰 TOMA DE BENEFICIOS: {symbol}")
+        # connection.execute_order(connection.gen, symbol, 'sell', ...)
+
+def strategy_savings(connection, brain, sp500):
+    """
+    Lógica Paciente para Exchange B (KuCoin).
+    Objetivo: Comprar XMR barato.
+    """
+    # Usamos el exchange SAFE
+    data = connection.get_data(connection.safe, TARGET_COIN)
+    if not data: return
+
+    prob, rsi, price, rvol = brain.analyze(data, sp500)
+    
+    # Chequear saldo USDT en el exchange B
+    bal = connection.get_balance(connection.safe)
+    usdt = bal.get('USDT', {}).get('free', 0)
+    
+    if usdt < 10: 
+        print("   ⚠️ Refugio: Sin USDT. (Recuerda transferir ganancias del Generador).")
+        return
+
+    # Lógica Lullaby (Más exigente que la generadora)
+    # Solo compramos si está MUY barato (RSI < 30) o Squeeze
+    is_buy = (rsi < 30) or (prob > 0.85)
+    
+    if is_buy:
+        print(f"   🧸 OPORTUNIDAD XMR: Comprando con ${usdt:.2f}")
+        connection.execute_order(connection.safe, TARGET_COIN, 'buy', usdt / price)

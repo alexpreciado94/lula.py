@@ -1,75 +1,48 @@
 import time
-import sys
-from connection import KrakenConnection
+from connection import DualExchangeManager
 from brain import Brain
-from lullaby import manage_wealth, operate_speculation, GENERATOR_COINS, TARGET_COIN
+from lullaby import strategy_generator, strategy_savings, manage_cold_storage, GENERATOR_COINS
 
 def main():
-    print("\n🎶 LULA (Lullaby Edition) - Iniciando...")
-    print("-----------------------------------------")
+    print("\n🏴‍☠️ LULA (Double-Agent Edition) - Iniciando...")
     
-    # 1. CONEXIÓN
     try:
-        print("🔌 Conectando a Kraken...")
-        connection = KrakenConnection()
-    except Exception as e:
-        print(f"❌ Error conectando: {e}")
-        return
-
-    # 2. CEREBRO (MADNESS)
-    try:
-        # --- CAMBIO DE NOMBRE AQUÍ ---
-        path_model = '/app/data/madness.rknn' 
-        # -----------------------------
-        path_scaler = '/app/data/scaler.pkl'
+        # Esto iniciará DOS conexiones
+        connection = DualExchangeManager()
         
-        brain = Brain(path_model, path_scaler)
-        print("🧠 Madness NPU cargado correctamente.")
+        # Cerebro único (La IA es la misma para analizar gráficos)
+        brain = Brain('/app/data/madness.rknn', '/app/data/scaler.pkl')
     except Exception as e:
-        print(f"❌ Error cargando Madness: {e}")
-        print("   ¡Recuerda ejecutar trainer.py para generar madness.rknn!")
+        print(f"❌ Error Inicio: {e}")
         return
 
-    print("✅ Todo listo. Entrando en bucle de vigilancia.\n")
+    print(f"✅ Conectado a {connection.gen.id} (Gen) y {connection.safe.id} (Refugio)")
 
-    try:
-        while True:
-            hora = time.strftime('%H:%M:%S')
-            print(f"🌙 Ronda de vigilancia [{hora}]")
+    while True:
+        try:
+            print(f"\n🌙 Ronda [{time.strftime('%H:%M')}]")
+            sp500 = connection.get_sp500_data()
             
-            # 1. OBTENER DATO MACRO (SP500)
-            print("🌎 Obteniendo estado del S&P 500...")
-            sp500_data = connection.get_sp500_data()
-
-            # 2. FASE DE TRABAJO
-            print("   --- Analizando Mercado ---")
+            # 1. TRABAJAR (En Exchange A)
+            print("   --- Generando Cash ---")
             for coin in GENERATOR_COINS:
-                try:
-                    operate_speculation(connection, brain, coin, sp500_data)
-                except Exception as e:
-                    print(f"   ⚠️ Error analizando {coin}: {e}")
+                strategy_generator(connection, brain, coin, sp500)
 
-            # 3. FASE DE AHORRO (XMR)
-            print("   --- Revisando Hucha (XMR) ---")
-            try:
-                xmr_data = connection.get_data(TARGET_COIN)
-                if xmr_data:
-                    prob_xmr, rsi_xmr, price_xmr = brain.analyze(xmr_data, sp500_data)
-                    
-                    if prob_xmr is not None:
-                        manage_wealth(connection, price_xmr, prob_xmr, rsi_xmr)
-            except Exception as e:
-                print(f"   ⚠️ Error gestionando patrimonio: {e}")
+            # 2. AHORRAR (En Exchange B)
+            print("   --- Gestionando XMR ---")
+            strategy_savings(connection, brain, sp500)
 
-            print("💤 Lula durmiendo 60 minutos...\n")
+            # 3. ENVIAR A TREZOR (Salida Final)
+            manage_cold_storage(connection)
+
+            print("💤 Durmiendo 60 min...")
             time.sleep(3600)
 
-    except KeyboardInterrupt:
-        print("\n🛑 Deteniendo Lula...")
-    finally:
-        if 'brain' in locals():
-            brain.release()
-        print("👋 Lula desconectada.")
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"⚠️ Error Bucle: {e}")
+            time.sleep(60)
 
 if __name__ == "__main__":
     main()

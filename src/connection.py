@@ -4,71 +4,91 @@ import time
 import os
 import sys
 
-class KrakenConnection:
+class DualExchangeManager:
     def __init__(self):
-        # 1. Cargar Credenciales desde variables de entorno (Docker/.env)
-        api_key = os.getenv('API_KEY')
-        secret_key = os.getenv('SECRET_KEY')
+        print("🔌 Inicializando Sistema de Doble Exchange...")
         
-        if not api_key or not secret_key:
-            print("❌ ERROR FATAL: No hay API Keys en el archivo .env")
+        # 1. Configurar GENERADOR (Binance, Bybit...)
+        self.gen = self._connect(
+            os.getenv('GEN_EXCHANGE_ID'),
+            os.getenv('GEN_API_KEY'),
+            os.getenv('GEN_SECRET_KEY')
+        )
+        
+        # 2. Configurar REFUGIO (KuCoin, CoinEx...)
+        self.safe = self._connect(
+            os.getenv('XMR_EXCHANGE_ID'),
+            os.getenv('XMR_API_KEY'),
+            os.getenv('XMR_SECRET_KEY'),
+            os.getenv('XMR_PASSWORD')
+        )
+        
+    def _connect(self, exchange_id, key, secret, password=None):
+        if not key or not secret:
+            print(f"❌ Falta API Key para {exchange_id}")
             sys.exit(1)
-
-        # 2. Inicializar Kraken con Rate Limiting activado
-        self.exchange = ccxt.kraken({
-            'apiKey': api_key,
-            'secret': secret_key,
+            
+        exchange_class = getattr(ccxt, exchange_id)
+        config = {
+            'apiKey': key, 
+            'secret': secret, 
             'enableRateLimit': True,
-            'options': {
-                'adjustForTimeDifference': True  # Vital para evitar errores de sincronización
-            }
-        })
+            'options': {'defaultType': 'spot'}
+        }
+        if password: config['password'] = password
+        
+        return exchange_class(config)
+
+    # --- MÉTODOS UNIVERSALES (Le pasas qué exchange usar) ---
     
-    def get_data(self, symbol, limit=100):
-        """
-        Descarga velas de Cripto (OHLCV) desde Kraken.
-        Reintenta 3 veces si falla la red.
-        """
+    def get_data(self, exchange_obj, symbol, limit=100):
         for i in range(3):
             try:
-                # Descarga OHLCV (Open, High, Low, Close, Volume)
-                bars = self.exchange.fetch_ohlcv(symbol, timeframe='1h', limit=limit)
-                if bars and len(bars) > 0:
-                    return bars
-            except Exception as e:
-                print(f"⚠️ Aviso: Fallo de red obteniendo {symbol} ({i+1}/3).")
-                time.sleep(5)
-        
-        print(f"❌ Error: Kraken no respondió para {symbol} tras 3 intentos.")
+                bars = exchange_obj.fetch_ohlcv(symbol, '1h', limit=limit)
+                if bars: return bars
+            except: time.sleep(2)
         return None
 
-    def get_sp500_data(self):
-        """
-        Descarga datos del S&P 500 (^GSPC) de Yahoo Finance.
-        Necesario para el input Macro de la IA (Madness).
-        """
-        try:
-            # Bajamos 7 días para asegurar cobertura de fines de semana
-            # Intervalo 1h para coincidir con las velas de cripto
-            spx = yf.download(tickers="^GSPC", period="7d", interval="1h", progress=False)
-            
-            if spx.empty:
-                print("⚠️ Aviso: Yahoo Finance devolvió datos vacíos para SP500.")
-                return None
+    def get_balance(self, exchange_obj):
+        try: return exchange_obj.fetch_balance()
+        except: return None
 
-            # Yahoo a veces devuelve estructuras complejas. 
-            # Nos aseguramos de obtener solo la columna de cierre 'Close'.
-            if 'Close' in spx.columns:
-                return spx['Close']
-            else:
-                # Si la estructura cambia, cogemos la primera columna por defecto
-                return spx.iloc[:, 0]
-            
+    def execute_order(self, exchange_obj, symbol, side, amount):
+        try:
+            # create_market_order es más directo
+            return exchange_obj.create_market_order(symbol, side, amount)
         except Exception as e:
-            print(f"⚠️ Error obteniendo S&P 500: {e}")
+            print(f"❌ Error Orden: {e}")
             return None
 
-    def get_balance(self):
-        """Devuelve el balance completo de la cuenta."""
+    def withdraw_to_trezor(self, currency, amount, address):
+        """
+        💸 Mover fondos del Exchange B a tu Trezor Safe 3.
+        REQUIERE PERMISOS DE 'WITHDRAWAL' EN LA API KEY.
+        """
         try:
-            return self.e
+            # KuCoin y otros a veces requieren parámetros extra como 'chain'
+            params = {} 
+            
+            # Verificar si hay saldo suficiente (restando fee de red aprox 0.0001 XMR)
+            if amount <= 0: return None
+            
+            print(f"❄️ INICIANDO RETIRO A TREZOR: {amount} {currency}")
+            
+            tx = self.safe.withdraw(
+                code=currency,
+                amount=amount,
+                address=address,
+                params=params
+            )
+            print(f"✅ FONDOS ENVIADOS A BÓVEDA. TX ID: {tx['id']}")
+            return tx
+        except Exception as e:
+            print(f"❌ Error en Retiro (Check API Permissions): {e}")
+            return None
+
+    def get_sp500_data(self):
+        try:
+            spx = yf.download("^GSPC", period="7d", interval="1h", progress=False)
+            return spx['Close'] if not spx.empty else None
+        except: return None
