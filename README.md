@@ -13,7 +13,7 @@
 
 ## 📝 DESCRIPCIÓN
 
-**Lula** es una IA de trading soberana diseñada para ejecutarse aislada en **Docker** 🐳 dentro de una **Orange Pi 5 Max**.
+**Lula** es una IA de trading, diseñada para ejecutarse aislada en **Docker** 🐳 dentro de una **Orange Pi 5 Max**.
 
 Su lógica (*Lullaby*) especula en mercados volátiles (BTC, SOL, ETH) para acumular automáticamente **Monero (XMR)** 🔒 como reserva de valor privada.
 
