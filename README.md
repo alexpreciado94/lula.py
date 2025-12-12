@@ -13,9 +13,15 @@
 
 ## 📝 DESCRIPCIÓN
 
-**Lula** es una IA de trading, diseñada para ejecutarse aislada en **Docker** 🐳 dentro de una **Orange Pi 5 Max**.
+**Lula** es una IA de trading, diseñada para ejecutarse en **Docker** 🐳 dentro de una **Orange Pi 5 Max**.
 
-Su lógica (*Lullaby*) especula en mercados volátiles (BTC, SOL, ETH) para acumular automáticamente **Monero (XMR)** 🔒 como reserva de valor privada.
+Su lógica (*Lullaby*) especula en mercados volátiles para acumular automáticamente **Monero (XMR)** 🔒 como reserva de valor privada.
+
+### ☠️ El Modus Operandi
+
+1.  **Hit & Run (El Golpe):** Lula monitorea las monedas ruidosas (BTC, ETH, SOL). Cuando detecta una oportunidad matemática, entra, golpea y extrae liquidez (USDT) antes de que el mercado reaccione.
+2.  **Ghost Protocol (El Fantasma):** El dinero en un exchange es dinero vigilado. Lula no deja rastro: convierte automáticamente el botín a **Monero (XMR)**, moviendo el valor fuera del radar.
+3.  **System Shutdown:** El mercado nunca cierra, pero tú sí. Lula absorbe el estrés y la paranoia del trading 24/7 para que tú puedas desconectar.
 
 ---
 
