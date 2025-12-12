@@ -1,5 +1,5 @@
 # lula.py
 Artificial Intelligence for CryptoTrading - Expert of Monero
-(Blessed by Sor. Concha) #CypherPunk
-
 Made with LOVE for Orange Pi 5 Max. 🐼
+
+(Blessed by Sor. Concha) #CypherPunk
