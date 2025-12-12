@@ -4,7 +4,7 @@ Made with LOVE for Orange Pi 5 Max. 🐼
 
 (Blessed by Sor. Concha) #CypherPunk
 
-Cómo usar este script
+Cómo usar este script  
 Conéctate por SSH a tu Orange Pi.
 chmod +x install.sh
 
