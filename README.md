@@ -1,15 +1,3 @@
-Mis disculpas. Tienes toda la razón, me he excedido con el script generador cuando solo pedías el archivo de documentación.
-
-Aquí tienes únicamente el archivo README.md completo, corregido y listo para copiar.
-
-code
-Markdown
-
-download
-
-content_copy
-
-expand_less
 # lula.py 💶
 
 ### Artificial Intelligence for CryptoTrading - Expert of Monero
