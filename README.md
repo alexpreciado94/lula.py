@@ -1,80 +1,158 @@
+Mis disculpas. Tienes toda la razón, me he excedido con el script generador cuando solo pedías el archivo de documentación.
+
+Aquí tienes únicamente el archivo README.md completo, corregido y listo para copiar.
+
+code
+Markdown
+
+download
+
+content_copy
+
+expand_less
 # lula.py 💶
 
 ### Artificial Intelligence for CryptoTrading - Expert of Monero
 **Made with LOVE for Orange Pi 5 Max. [Python 3.9]** 🐼
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Platform](https://img.shields.io/badge/Hardware-Orange_Pi_5_Max_(RK3588)-orange)](http://www.orangepi.org/)
+[![Platform](https://img.shields.io/badge/Hardware-Orange_Pi_5_Max-orange)](http://www.orangepi.org/)
 [![Status](https://img.shields.io/badge/Mode-CypherPunk-black)](https://getmonero.org/)
 
 > *(Blessed by Sor. Concha)* #CypherPunk
 
 ---
 
-## 🏗️ Arquitectura del Sistema
-Lula utiliza una **Arquitectura Híbrida** para garantizar soberanía y rendimiento:
-
-1.  **El Cerebro (PC / Kali Linux):** Entrenamos la IA en un ordenador potente usando TensorFlow. Generamos un "cerebro congelado" (`.rknn`).
-2.  **El Cuerpo (Orange Pi 5 Max):** Ejecutamos el cerebro usando el chip NPU (IA dedicada) de bajo consumo, aislado en Docker.
-3.  **La Misión (Lullaby):** Especular con criptos volátiles (BTC, SOL) para acumular **Monero (XMR)** gratis.
+## 🏴‍☠️ Descripción
+Lula es una IA de trading soberana que opera aislada en Docker. Su lógica de negocio ("Lullaby") consiste en generar liquidez mediante especulación en mercados volátiles (BTC, SOL, ETH) para acumular automáticamente **Monero (XMR)** como reserva de valor privada.
 
 ---
 
-## 🛠️ FASE 1: Preparación de la Orange Pi (El Servidor)
+## ⚙️ 1. Script de Instalación (Orange Pi)
 
-Estos pasos configuran el sistema operativo, Docker, los drivers de la NPU y la estructura de carpetas.
+Configura el entorno (Docker, Drivers NPU, Portainer) en tu Orange Pi 5 Max virgen.
 
-1.  **Conéctate por SSH:**
+1.  **Conéctate por SSH a tu Orange Pi:**
     ```bash
-    ssh root@<IP_DE_TU_ORANGE_PI>
+    ssh root@<TU_IP>
     ```
 
-2.  **Ejecuta el Instalador Maestro:**
+2.  **Ve al directorio de scripts y da permisos:**
     ```bash
-    # Asumiendo que has copiado la carpeta lula_project a tu home
     cd lula_project/scripts/
     chmod +x install_lula.sh
+    ```
+
+3.  **Ejecútalo como SuperUsuario:**
+    ```bash
     sudo ./install_lula.sh
     ```
 
-3.  **Verifica la Instalación:**
-    Al finalizar, reinicia la placa (`sudo reboot`). Al volver, deberías tener la carpeta `lula_project` con las subcarpetas `libs`, `data`, `src` y `docker` listas.
-
-    > **Nota:** Usa **FileZilla** o `scp` para subir tus archivos de código fuente (`src/`) y tu archivo de secretos (`.env`) a la Orange Pi ahora.
+> **Nota:** Una vez termine el script, usa **FileZilla** o `scp` para pasar tus archivos de código (`src/`, `.env`, `data/`) dentro de la carpeta `lula_project` que se habrá creado.
 
 ---
 
-## 🔌 FASE 2: Test de Conexión (Sanity Check)
+## 🔌 2. Test de Conexión
 
-Antes de levantar el sistema complejo, verificamos que la Orange Pi tiene salida a internet y que tus API Keys de Kraken funcionan.
+Verifica que tu Orange Pi tiene acceso a Kraken antes de levantar el sistema completo.
 
-1.  **Instala dependencias temporales (solo para el test):**
+1.  **Instala las dependencias temporales en la Orange Pi:**
     ```bash
     pip install ccxt python-dotenv
     ```
 
-2.  **Ejecuta el test:**
+2.  **Ejecuta el Test:**
     ```bash
     cd lula_project/scripts/
     python3 connection_test.py
     ```
-    *Si ves mensajes en VERDE ✅, puedes proceder.*
 
 ---
 
-## 🧠 FASE 3: El Entrenamiento (En tu PC / Kali Linux)
+## 🧠 3. Entrenamiento en PC (Kali Linux)
 
-**⚠️ IMPORTANTE:** Esto NO se hace en la Orange Pi. Se hace en tu ordenador.
+**Optimizado para Kali Linux / Ubuntu.**
+Este proceso descarga datos históricos, entrena la red neuronal y compila el modelo para el chip RK3588.
 
-### 1. Preparar Entorno en Kali Linux
+**1. Instalar Dependencias del Sistema:**
 ```bash
-# Instalar librerías de sistema necesarias para compilar
 sudo apt install -y python3-dev python3-pip python3-venv libxslt1-dev zlib1g-dev libgl1-mesa-glx
+2. Crear y Activar Entorno Virtual:
 
-# Crear y activar entorno virtual
+code
+Bash
+
+download
+
+content_copy
+
+expand_less
 cd lula_project/scripts/trainer
 python3 -m venv venv
 source venv/bin/activate
+3. Instalar Dependencias de Python:
 
-# Instalar dependencias de Python
+code
+Bash
+
+download
+
+content_copy
+
+expand_less
 pip install -r trainer_requirements.txt
+4. Ejecutar Entrenador:
+
+code
+Bash
+
+download
+
+content_copy
+
+expand_less
+python trainer.py
+Sobre el archivo .rknn final
+El script intentará generar el archivo madness.rknn automáticamente.
+
+Opción A (Nativa): Si tienes el rknn-toolkit2 instalado en Kali, el archivo se generará en la carpeta data/.
+Opción B (Docker Fallback): Si el script solo genera el .onnx por falta de librerías, ejecuta este comando en tu PC para convertirlo:
+code
+Bash
+
+download
+
+content_copy
+
+expand_less
+docker run -v $(pwd)/../../data:/data --entrypoint python3 \
+rockchip/rknn-toolkit2 \
+-c "from rknn.api import RKNN; r=RKNN(verbose=False); r.config(target_platform='rk3588'); r.load_onnx('/data/madness.onnx'); r.build(do_quantization=False); r.export_rknn('/data/madness.rknn')"
+🐳 4. Ejecución (Producción)
+Una vez tengas el cerebro (madness.rknn) y las claves (.env) en tu Orange Pi:
+
+code
+Bash
+
+download
+
+content_copy
+
+expand_less
+cd lula_project/docker
+docker compose up -d --build
+Comandos útiles:
+
+Ver logs: docker logs -f lula_bot
+Apagar: docker compose down
+⚖️ Licencia
+Distribuido bajo la licencia Apache 2.0.
+
+code
+Code
+
+download
+
+content_copy
+
+expand_less
