@@ -7,8 +7,8 @@ Made with LOVE for Orange Pi 5 Max. 🐼
 Script de instalación
 
 1. Conéctate por SSH a tu Orange Pi: ssh -vvv root@000.000.0.0
-2. Añade permisos de Ejecución: chmod +x install.sh
-3. Ejecútalo como SuperUsuario: sudo ./install.sh
+2. Añade permisos de Ejecución: chmod +x install_lula.sh
+3. Ejecútalo como SuperUsuario: sudo ./install_lula.sh
 
 Una vez termine el script, solo tendrás que usar FileZilla para pasar tus archivos de código dentro de la carpeta lula_project que se habrá creado sola.
 
