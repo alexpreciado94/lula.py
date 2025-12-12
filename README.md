@@ -64,19 +64,7 @@ Este proceso descarga datos históricos, entrena la red neuronal y compila el mo
 
 **1. Instalar Dependencias del Sistema:**
 ```bash
-sudo apt install -y python3-dev python3-pip python3-venv libxslt1-dev zlib1g-dev libgl1-mesa-glx
-2. Crear y Activar Entorno Virtual:
-
-code
-Bash
-
-download
-
-content_copy
-
-expand_less
-cd lula_project/scripts/trainer
-python3 -m venv venv
+sudo apt install -y python venv
 source venv/bin/activate
 3. Instalar Dependencias de Python:
 
@@ -132,15 +120,4 @@ docker compose up -d --build
 Comandos útiles:
 
 Ver logs: docker logs -f lula_bot
-Apagar: docker compose down
-⚖️ Licencia
-Distribuido bajo la licencia Apache 2.0.
-
-code
-Code
-
-download
-
-content_copy
-
-expand_less
+Apagar: docker compos
