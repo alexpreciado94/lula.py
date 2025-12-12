@@ -30,7 +30,7 @@ services:
       - tor-proxy
       - monero-node
     devices:
-      - /dev/rknpu:/dev/rknpu # Acceso directo a la NPU
+      - /dev/rknpu:/dev/rknpu # Acceso directo a NPU
       - /dev/rga:/dev/rga     # Aceleración opcional
     env_file:
       - .env
