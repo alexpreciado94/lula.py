@@ -5,7 +5,7 @@
 
 | **LICENSE** | **HARDWARE** | **MODE** |
 | :--- | :--- | :--- |
-| Apache 2.0 📜 | Orange Pi 5 Max 🍊 | Need $$$ 🕶️ |
+| Apache 2.0 📜 | Orange Pi 5 Max 🍊 | Need $$$ 🤑 |
 
 🙏 **Blessed by Sor. Concha** — `#CypherPunk`
 
