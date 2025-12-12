@@ -113,6 +113,3 @@ docker compose up -d --build
 *   Apagar: `docker compose down` 🛑
 
 ---
-
-## 📜 LICENCIA
-**Apache 2.0**
