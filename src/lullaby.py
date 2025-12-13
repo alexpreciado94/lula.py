@@ -1,80 +1,110 @@
+import os
+
 # --- CONFIGURACIÓN ---
-GENERATOR_COINS = ['SOL/USDT', 'ETH/USDT', 'BTC/USDT'] # En Exchange A
-TARGET_COIN = 'XMR/USDT'                               # En Exchange B
+GENERATOR_COINS = ['SOL/USDT', 'ETH/USDT', 'BTC/USDT', 'DOGE/USDT', 'XRP/USDT']
+TARGET_COIN = 'XMR/USDT'
 
-# Ajustes Trezor
-MIN_XMR_TO_WITHDRAW = 0.5  # No retirar migajas para no pagar fees tontos
-TREZOR_ADDRESS = None      # Se carga desde .env en main
+# Reglas Patrimonio
+MAX_XMR_PERCENT = 0.40         
+MIN_CASH_RESERVE = 100.0          
+MIN_BRIDGE_BATCH = 50.0 # Transferir al refugio cada $50 ganados
+MIN_XMR_WITHDRAW = 0.5
 
-def manage_cold_storage(connection):
-    """
-    Fase final: Vaciar el Exchange B hacia el Trezor.
-    """
-    from os import getenv
-    trezor_addr = getenv('TREZOR_XMR_ADDRESS')
-    if not trezor_addr: return
-
-    # Miramos saldo en el Exchange de Refugio (self.safe)
-    balance = connection.get_balance(connection.safe)
-    if not balance: return
+def detect_liquidity_squeeze(connection, symbol, current_rvol):
+    """Detecta Squeeze: Mucho volumen + Poca oferta"""
+    if current_rvol < 2.5: return False, ""
     
-    xmr_free = balance.get('XMR', {}).get('free', 0)
+    ask_depth, bid_depth = connection.get_order_book_depth(connection.safe, symbol)
+    if ask_depth == 0: return False, ""
+
+    # Si el volumen es 3x lo normal, asumimos presión
+    if current_rvol > 3.5:
+        return True, f"🔥 SQUEEZE (Vol: {current_rvol:.1f}x)"
+    return False, ""
+
+def manage_wealth(connection, brain_score, xmr_rsi, xmr_rvol, xmr_price):
+    """Estrategia Ahorro (Exchange B)"""
+    bal = connection.get_balance(connection.safe)
+    if not bal: return
+
+    # Normalizar nombres
+    usdt = bal.get('USDT', {}).get('total', 0)
+    xmr = bal.get('XMR', {}).get('total', 0)
+
+    total = usdt + (xmr * xmr_price)
+    if total == 0: return 
+    pct = (xmr * xmr_price) / total
+
+    print(f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}")
+
+    if pct >= MAX_XMR_PERCENT: return print("   ✋ Límite XMR alcanzado.")
+    if usdt < 5: return print("   🌱 Sin cash para comprar XMR.")
+
+    # Oportunidad: Barato, IA Segura o Squeeze
+    is_squeeze, msg = detect_liquidity_squeeze(connection, TARGET_COIN, xmr_rvol)
     
-    if xmr_free > MIN_XMR_TO_WITHDRAW:
-        print(f"   ❄️ BÓVEDA: Detectados {xmr_free:.4f} XMR listos para frío.")
-        # Retiramos TODO menos una migaja para fees
-        amount = xmr_free - 0.001 
-        connection.withdraw_to_trezor('XMR', amount, trezor_addr)
+    if (xmr_rsi < 35) or (brain_score > 0.85) or is_squeeze:
+        print(f"   🧸 Oportunidad! ({msg} Score: {brain_score:.2f})")
+        connection.execute_order(connection.safe, TARGET_COIN, 'buy', usdt / xmr_price)
     else:
-        print(f"   🧊 Acumulando XMR ({xmr_free:.4f}/{MIN_XMR_TO_WITHDRAW}).")
+        print("   ⏳ Esperando mejor entrada XMR.")
 
-def strategy_generator(connection, brain, symbol, sp500):
-    """
-    Lógica Agresiva para Exchange A (Binance).
-    Objetivo: Generar USDT.
-    """
-    # Usamos el exchange GEN
-    data = connection.get_data(connection.gen, symbol)
+def strategy_generator(connection, brain, guardian, symbol, sp500):
+    """Estrategia Mercenaria (Exchange A) con Guardián"""
+    if not connection.validate_symbol(connection.gen, symbol): return
+
+    data = connection.get_data(connection.gen, symbol, limit=300)
     if not data: return
 
-    prob, rsi, price, _ = brain.analyze(data, sp500)
+    # 1. FILTRO DEL GUARDIÁN (Macro)
+    ok, msg = guardian.analizar_macro(symbol, data)
+    if not ok:
+        print(f"   🛡️ BLOQUEO {symbol}: {msg}")
+        return # No operamos
+
+    # 2. ANÁLISIS TÉCNICO
+    prob, rsi, price, rvol = brain.analyze(data, sp500)
     if prob is None: return
 
-    print(f"   ⚡ GEN {symbol}: ${price} | IA: {prob:.2f}")
-
-    # COMPRA AGRESIVA
-    if prob > 0.92:
-        print(f"   🚀 COMPRA GENERADORA: {symbol}")
-        # connection.execute_order(connection.gen, symbol, 'buy', ...)
-    
-    # VENTA RÁPIDA (Take Profit)
-    elif prob < 0.30:
-        print(f"   💰 TOMA DE BENEFICIOS: {symbol}")
-        # connection.execute_order(connection.gen, symbol, 'sell', ...)
-
-def strategy_savings(connection, brain, sp500):
-    """
-    Lógica Paciente para Exchange B (KuCoin).
-    Objetivo: Comprar XMR barato.
-    """
-    # Usamos el exchange SAFE
-    data = connection.get_data(connection.safe, TARGET_COIN)
-    if not data: return
-
-    prob, rsi, price, rvol = brain.analyze(data, sp500)
-    
-    # Chequear saldo USDT en el exchange B
-    bal = connection.get_balance(connection.safe)
+    # Check tenencia
+    bal = connection.get_balance(connection.gen)
+    base = symbol.split('/')[0]
+    held = bal.get(base, {}).get('free', 0)
     usdt = bal.get('USDT', {}).get('free', 0)
-    
-    if usdt < 10: 
-        print("   ⚠️ Refugio: Sin USDT. (Recuerda transferir ganancias del Generador).")
-        return
+    value_held = held * price
 
-    # Lógica Lullaby (Más exigente que la generadora)
-    # Solo compramos si está MUY barato (RSI < 30) o Squeeze
-    is_buy = (rsi < 30) or (prob > 0.85)
+    print(f"   ⚡ GEN {symbol}: ${price} | IA: {prob:.2f} | Guardián: OK")
+
+    # COMPRA (Si IA > 0.92 y tenemos poco)
+    if prob > 0.92 and value_held < 50:
+        if usdt > 15:
+            print(f"   🚀 COMPRA AGRESIVA: {symbol}")
+            connection.execute_order(connection.gen, symbol, 'buy', 20.0 / price)
+
+    # VENTA (Take Profit o Miedo IA)
+    elif (prob < 0.30 or rsi > 75) and value_held > 10:
+        print(f"   💰 TAKE PROFIT: {symbol} (RSI: {rsi:.1f})")
+        connection.execute_order(connection.gen, symbol, 'sell', held)
+
+def manage_bridge(connection):
+    """Mueve ganancias A -> B"""
+    bal = connection.get_balance(connection.gen)
+    if not bal: return
+    usdt = bal.get('USDT', {}).get('total', 0)
     
-    if is_buy:
-        print(f"   🧸 OPORTUNIDAD XMR: Comprando con ${usdt:.2f}")
-        connection.execute_order(connection.safe, TARGET_COIN, 'buy', usdt / price)
+    surplus = usdt - MIN_CASH_RESERVE
+    if surplus >= MIN_BRIDGE_BATCH:
+        addr = os.getenv('REFUGE_USDT_DEPOSIT_ADDRESS')
+        net = os.getenv('BRIDGE_NETWORK', 'TRX')
+        if addr: connection.bridge_transfer(surplus, addr, net)
+
+def manage_cold_storage(connection):
+    """Mueve XMR -> Trezor"""
+    addr = os.getenv('TREZOR_XMR_ADDRESS')
+    if not addr: return
+    bal = connection.get_balance(connection.safe)
+    if not bal: return
+    
+    xmr_free = bal.get('XMR', {}).get('free', 0)
+    if xmr_free > MIN_XMR_WITHDRAW:
+        connection.withdraw_to_trezor('XMR', xmr_free - 0.001, addr)

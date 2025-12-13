@@ -6,7 +6,7 @@ from rknnlite.api import RKNNLite
 
 class Brain:
     def __init__(self, model_path, scaler_path):
-        print(f"⚙️ Iniciando Madness Protocol (Volumen Edition): {model_path}")
+        print(f"⚙️ Iniciando Madness Protocol: {model_path}")
         self.rknn = RKNNLite()
         if self.rknn.load_rknn(model_path) != 0: raise Exception("❌ Fallo RKNN")
         if self.rknn.init_runtime(core_mask=RKNNLite.NPU_CORE_0) != 0: raise Exception("❌ Fallo NPU")
@@ -17,7 +17,7 @@ class Brain:
         df['ts'] = pd.to_datetime(df['ts'], unit='ms')
         df.set_index('ts', inplace=True)
         
-        # --- MERGE MACRO ---
+        # --- MERGE MACRO (S&P 500) ---
         if sp500_data is None or sp500_data.empty:
             df['sp500'] = df['close'] 
         else:
@@ -26,37 +26,34 @@ class Brain:
             df = df.join(sp500_data.rename('sp500'), how='left')
             df['sp500'] = df['sp500'].ffill().bfill()
 
-        # --- NUEVOS INDICADORES DE VOLUMEN (EL REY) ---
-        # 1. OBV (On Balance Volume): ¿Entra o sale dinero real?
-        df['obv'] = df.ta.obv(close=df['close'], volume=df['v'])
+        # --- INDICADORES ---
+        df['rsi'] = df.ta.rsi(close=df['close'], length=14)
+        df['ema20'] = df.ta.ema(close=df['close'], length=20)
+        df['atr'] = df.ta.atr(high=df['h'], low=df['l'], close=df['close'], length=14)
         
-        # 2. MFI (Money Flow Index): RSI pero con volumen. Detecta presión de compra.
-        df['mfi'] = df.ta.mfi(high=df['h'], low=df['l'], close=df['close'], volume=df['v'], length=14)
+        # Macro & Volumen
+        df['sp500_rsi'] = df.ta.rsi(close=df['sp500'], length=14)
+        df['corr_spx'] = df['close'].rolling(24).corr(df['sp500'])
         
-        # 3. RVOL (Relative Volume): ¿Es el volumen de hoy anormalmente alto?
-        # Si esto se dispara, algo gordo va a pasar.
+        # Cálculo de RVOL (Volumen Relativo) para estrategia de Squeeze
         df['vol_sma'] = df['v'].rolling(20).mean()
         df['rvol'] = df['v'] / df['vol_sma']
-
-        # Indicadores Clásicos
-        df['rsi'] = df.ta.rsi(close=df['close'], length=14)
-        df['atr'] = df.ta.atr(high=df['h'], low=df['l'], close=df['close'], length=14)
-        df['corr_spx'] = df['close'].rolling(24).corr(df['sp500'])
         
         df.fillna(method='bfill', inplace=True)
         
-        # Ahora tenemos más features para la IA
-        # IMPORTANTE: Si cambias esto, DEBES RE-ENTRENAR trainer.py con las mismas columnas
-        features = ['rsi', 'mfi', 'rvol', 'atr', 'obv', 'close', 'sp500', 'corr_spx']
+        # Features esperadas por el modelo (Orden estricto del trainer.py)
+        features = ['rsi', 'ema20', 'atr', 'close', 'v', 'sp500', 'sp500_rsi', 'corr_spx']
         
         if df.iloc[-1][features].isnull().values.any(): return None, None, None, None
             
-        # Preparamos datos
         last_row = df.iloc[[-1]][features]
         input_data = self.scaler.transform(last_row.values).astype(np.float32)
-        outputs = self.rknn.inference(inputs=[input_data])
         
-        # Retornamos también el RVOL (Volumen Relativo) para la estrategia
-        return outputs[0][0][0], df['rsi'].iloc[-1], df['close'].iloc[-1], df['rvol'].iloc[-1]
+        # Inferencia NPU
+        outputs = self.rknn.inference(inputs=[input_data])
+        probabilidad = outputs[0][0][0]
+        
+        # Retornamos Probabilidad, RSI, Precio y RVOL (para el detector de squeeze)
+        return probabilidad, df['rsi'].iloc[-1], df['close'].iloc[-1], df['rvol'].iloc[-1]
         
     def release(self): self.rknn.release()

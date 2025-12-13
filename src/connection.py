@@ -8,16 +8,16 @@ class DualExchangeManager:
     def __init__(self):
         print("🔌 Inicializando Sistema de Doble Exchange...")
         
-        # 1. Configurar GENERADOR (Binance, Bybit...)
+        # 1. Configurar GENERADOR (Donde ganamos dinero)
         self.gen = self._connect(
-            os.getenv('GEN_EXCHANGE_ID'),
+            os.getenv('GEN_EXCHANGE_ID', 'binance'),
             os.getenv('GEN_API_KEY'),
             os.getenv('GEN_SECRET_KEY')
         )
         
-        # 2. Configurar REFUGIO (KuCoin, CoinEx...)
+        # 2. Configurar REFUGIO (Donde compramos Monero)
         self.safe = self._connect(
-            os.getenv('XMR_EXCHANGE_ID'),
+            os.getenv('XMR_EXCHANGE_ID', 'kucoin'),
             os.getenv('XMR_API_KEY'),
             os.getenv('XMR_SECRET_KEY'),
             os.getenv('XMR_PASSWORD')
@@ -28,25 +28,37 @@ class DualExchangeManager:
             print(f"❌ Falta API Key para {exchange_id}")
             sys.exit(1)
             
+        if not hasattr(ccxt, exchange_id):
+            print(f"❌ Exchange '{exchange_id}' no soportado por CCXT.")
+            sys.exit(1)
+
         exchange_class = getattr(ccxt, exchange_id)
         config = {
             'apiKey': key, 
             'secret': secret, 
             'enableRateLimit': True,
-            'options': {'defaultType': 'spot'}
+            'options': {'defaultType': 'spot', 'adjustForTimeDifference': True}
         }
         if password: config['password'] = password
         
         return exchange_class(config)
 
-    # --- MÉTODOS UNIVERSALES (Le pasas qué exchange usar) ---
+    # --- MÉTODOS UNIVERSALES ---
     
+    def validate_symbol(self, exchange_obj, symbol):
+        try:
+            if not exchange_obj.markets: exchange_obj.load_markets()
+            return symbol in exchange_obj.markets
+        except: return False
+
     def get_data(self, exchange_obj, symbol, limit=100):
+        """Descarga velas OHLCV con reintentos"""
         for i in range(3):
             try:
                 bars = exchange_obj.fetch_ohlcv(symbol, '1h', limit=limit)
                 if bars: return bars
-            except: time.sleep(2)
+            except Exception as e:
+                time.sleep(2)
         return None
 
     def get_balance(self, exchange_obj):
@@ -55,40 +67,54 @@ class DualExchangeManager:
 
     def execute_order(self, exchange_obj, symbol, side, amount):
         try:
-            # create_market_order es más directo
+            # Normalizar cantidad a la precisión del mercado
+            amount = exchange_obj.amount_to_precision(symbol, amount)
             return exchange_obj.create_market_order(symbol, side, amount)
         except Exception as e:
-            print(f"❌ Error Orden: {e}")
+            print(f"❌ Error Orden ({symbol}): {e}")
+            return None
+
+    def get_order_book_depth(self, exchange_obj, symbol):
+        """Analiza liquidez para detectar Squeezes"""
+        try:
+            book = exchange_obj.fetch_order_book(symbol, limit=20)
+            asks = book['asks']
+            bids = book['bids']
+            if not asks or not bids: return 0, 0
+            
+            liq_ask = sum([vol for price, vol in asks])
+            liq_bid = sum([vol for price, vol in bids])
+            return liq_ask, liq_bid
+        except: return 0, 0
+
+    def bridge_transfer(self, amount, target_address, network='TRX'):
+        """Mueve USDT del Generador al Refugio"""
+        try:
+            # Check de saldo
+            bal = self.get_balance(self.gen)
+            free = bal.get('USDT', {}).get('free', 0)
+            if amount > (free - 1.5): amount = free - 1.5
+            
+            if amount < 10: return None
+
+            print(f"   🌉 PUENTE: Enviando {amount:.2f} USDT -> Refugio")
+            return self.gen.withdraw('USDT', amount, target_address, params={'network': network})
+        except Exception as e:
+            print(f"   ❌ Error Puente: {e}")
             return None
 
     def withdraw_to_trezor(self, currency, amount, address):
-        """
-        💸 Mover fondos del Exchange B a tu Trezor Safe 3.
-        REQUIERE PERMISOS DE 'WITHDRAWAL' EN LA API KEY.
-        """
         try:
-            # KuCoin y otros a veces requieren parámetros extra como 'chain'
-            params = {} 
-            
-            # Verificar si hay saldo suficiente (restando fee de red aprox 0.0001 XMR)
             if amount <= 0: return None
-            
-            print(f"❄️ INICIANDO RETIRO A TREZOR: {amount} {currency}")
-            
-            tx = self.safe.withdraw(
-                code=currency,
-                amount=amount,
-                address=address,
-                params=params
-            )
-            print(f"✅ FONDOS ENVIADOS A BÓVEDA. TX ID: {tx['id']}")
-            return tx
+            print(f"   ❄️ BÓVEDA: Retirando {amount} {currency} a Trezor...")
+            return self.safe.withdraw(currency, amount, address)
         except Exception as e:
-            print(f"❌ Error en Retiro (Check API Permissions): {e}")
+            print(f"   ❌ Error Bóveda: {e}")
             return None
 
     def get_sp500_data(self):
         try:
             spx = yf.download("^GSPC", period="7d", interval="1h", progress=False)
-            return spx['Close'] if not spx.empty else None
+            if spx.empty: return None
+            return spx['Close'] if 'Close' in spx.columns else spx.iloc[:, 0]
         except: return None
