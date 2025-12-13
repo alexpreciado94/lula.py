@@ -18,7 +18,7 @@
 ### ⚙️ Flujo Operativo
 
 - **Generación de Cash**  
-  Explotación sistemática de ineficiencias en mercados líquidos (BTC, ETH, SOL) para producir flujo constante de USDT.
+  Explotación sistemática de los mercados con mayor liquidez, para producir flujo constante de USDT.
 
 - **Rotación de Liquidez**  
   Conversión automática del excedente de cash en activos fungibles y orientados a privacidad (XMR).
