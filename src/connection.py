@@ -78,19 +78,52 @@ class DualExchangeManager:
             print(f"❌ Error Orden ({symbol}): {e}")
             return None
 
-    def get_order_book_depth(self, exchange_obj, symbol):
-        try:
-            book = exchange_obj.fetch_order_book(symbol, limit=20)
-            asks = book["asks"]
-            bids = book["bids"]
-            if not asks or not bids:
-                return 0, 0
+    # --- NUEVAS HERRAMIENTAS AVANZADAS ---
 
-            liq_ask = sum([vol for price, vol in asks])
-            liq_bid = sum([vol for price, vol in bids])
-            return liq_ask, liq_bid
+    def get_order_book_imbalance(self, exchange_obj, symbol):
+        """
+        Calcula el desequilibrio entre compradores y vendedores.
+        Retorna: Ratio (-1.0 a 1.0). Positivo = Presión de Compra.
+        """
+        try:
+            # Analizamos los 50 niveles más cercanos
+            book = exchange_obj.fetch_order_book(symbol, limit=50)
+            if not book["asks"] or not book["bids"]:
+                return 0
+
+            # Sumar volumen de bids (compras) vs asks (ventas)
+            vol_bids = sum([bid[1] for bid in book["bids"]])
+            vol_asks = sum([ask[1] for ask in book["asks"]])
+            
+            total_vol = vol_bids + vol_asks
+            if total_vol == 0: return 0
+
+            # Fórmula de Imbalance: (Bids - Asks) / Total
+            imbalance = (vol_bids - vol_asks) / total_vol
+            return imbalance
         except Exception:
-            return 0, 0
+            return 0
+
+    def check_whale_trades(self, exchange_obj, symbol, threshold_usd=50000):
+        """
+        Busca 'Elephant Trades' (operaciones masivas) en los últimos minutos.
+        Retorna: True si hay ballenas activas moviendo el precio.
+        """
+        try:
+            # Descargar últimas operaciones públicas
+            trades = exchange_obj.fetch_trades(symbol, limit=100)
+            if not trades: return False
+
+            # Buscar si alguna operación supera el umbral (ej. $50k de golpe)
+            for trade in trades:
+                # trade['cost'] es precio * cantidad
+                if trade['cost'] and trade['cost'] > threshold_usd:
+                    side = trade['side'].upper()
+                    print(f"   🐋 BALLENA DETECTADA en {symbol}: {side} de ${trade['cost']:.0f}")
+                    return True
+            return False
+        except Exception:
+            return False
 
     def bridge_transfer(self, amount, target_address, network="TRX"):
         try:
@@ -103,7 +136,9 @@ class DualExchangeManager:
                 return None
 
             print(f"   🌉 PUENTE: Enviando {amount:.2f} USDT -> Refugio")
-            return self.gen.withdraw("USDT", amount, target_address, params={"network": network})
+            return self.gen.withdraw(
+                "USDT", amount, target_address, params={"network": network}
+            )
         except Exception as e:
             print(f"   ❌ Error Puente: {e}")
             return None

@@ -27,4 +27,4 @@ jobs:
       - name: 💾 Guardar Cambios
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🤖 Auto-fix: Synchronized Black formatting (100 chars)"
+          commit_message: "🤖"
