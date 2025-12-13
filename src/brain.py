@@ -47,9 +47,7 @@ class Brain:
         # Técnico
         df["rsi"] = df.ta.rsi(close=df["close"], length=14)
         df["ema20"] = df.ta.ema(close=df["close"], length=20)
-        df["atr"] = df.ta.atr(
-            high=df["h"], low=df["l"], close=df["close"], length=14
-        )
+        df["atr"] = df.ta.atr(high=df["h"], low=df["l"], close=df["close"], length=14)
 
         # Volumen (Ballenas)
         df["obv"] = df.ta.obv(close=df["close"], volume=df["v"])
@@ -100,9 +98,7 @@ class Brain:
 
         # 5. Formatear para NPU (3D Array)
         # RKNN espera: [Batch, TimeSteps, Features] -> [1, 10, 9]
-        input_data = scaled_sequence.reshape(
-            1, TIME_STEPS, len(features)
-        ).astype(np.float32)
+        input_data = scaled_sequence.reshape(1, TIME_STEPS, len(features)).astype(np.float32)
 
         # 6. Inferencia
         outputs = self.rknn.inference(inputs=[input_data])

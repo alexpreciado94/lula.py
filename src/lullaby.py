@@ -17,9 +17,7 @@ def detect_liquidity_squeeze(connection, symbol, current_rvol):
         return False, ""
 
     # Usamos el exchange de refugio (donde compramos XMR)
-    ask_depth, bid_depth = connection.get_order_book_depth(
-        connection.safe, symbol
-    )
+    ask_depth, bid_depth = connection.get_order_book_depth(connection.safe, symbol)
     if ask_depth == 0:
         return False, ""
 
@@ -49,9 +47,7 @@ def manage_wealth(connection, brain_score, xmr_rsi, xmr_rvol, xmr_price):
         return
     pct = (xmr * xmr_price) / total
 
-    print(
-        f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}"
-    )
+    print(f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}")
 
     if pct >= MAX_XMR_PERCENT:
         print("   ✋ Límite XMR alcanzado.")
@@ -65,9 +61,7 @@ def manage_wealth(connection, brain_score, xmr_rsi, xmr_rvol, xmr_price):
 
     if (xmr_rsi < 35) or (brain_score > 0.85) or is_squeeze:
         print(f"   🧸 Oportunidad! ({msg} Score: {brain_score:.2f})")
-        connection.execute_order(
-            connection.safe, TARGET_COIN, "buy", usdt / xmr_price
-        )
+        connection.execute_order(connection.safe, TARGET_COIN, "buy", usdt / xmr_price)
     else:
         print("   ⏳ Esperando mejor entrada XMR.")
 
@@ -109,9 +103,7 @@ def strategy_generator(connection, brain, guardian, symbol, sp500):
         if usdt > 15:
             print(f"   🚀 COMPRA AGRESIVA: {symbol}")
             # Tamaño de orden fijo para gestión de riesgo ($20)
-            connection.execute_order(
-                connection.gen, symbol, "buy", 20.0 / price
-            )
+            connection.execute_order(connection.gen, symbol, "buy", 20.0 / price)
 
     # VENTA (Take Profit o Miedo IA o Sobrecompra Extrema)
     elif (prob < 0.30 or rsi > 75) and value_held > 10:

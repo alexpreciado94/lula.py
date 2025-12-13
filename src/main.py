@@ -20,28 +20,26 @@ def main():
     try:
         # Conexión a Exchanges (Generador + Refugio)
         connection = DualExchangeManager()
-        
+
         # Carga del Cerebro IA en la NPU (RK3588)
         # Rutas absolutas dentro del contenedor Docker
         brain = Brain("/app/data/madness.rknn", "/app/data/scaler.pkl")
-        
+
         # Inicialización del Guardián (Filtro Macro/Social)
         guardian = Guardian()
-        
+
     except Exception as e:
         print(f"❌ Error Crítico al iniciar: {e}")
         return
 
-    print(
-        f"✅ Sistemas Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}"
-    )
+    print(f"✅ Sistemas Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}")
 
     # --- 2. BUCLE PRINCIPAL (VIGILANCIA PERPETUA) ---
     while True:
         try:
-            hora_actual = time.strftime('%H:%M')
+            hora_actual = time.strftime("%H:%M")
             print(f"\n🌙 Ronda de Vigilancia [{hora_actual}]")
-            
+
             # A. Obtener contexto Macro Global (S&P 500) una vez por ciclo
             sp500_data = connection.get_sp500_data()
 
@@ -72,11 +70,11 @@ def main():
             try:
                 # Obtenemos datos de XMR
                 xmr_data = connection.get_data(connection.safe, TARGET_COIN)
-                
+
                 if xmr_data:
                     # Analizamos XMR con la IA (obtenemos probabilidad, RSI, Precio y Volumen Relativo)
                     prob, rsi, price, rvol = brain.analyze(xmr_data, sp500_data)
-                    
+
                     if prob is not None:
                         # Ejecutamos la lógica de ahorro/squeeze
                         manage_wealth(connection, prob, rsi, rvol, price)

@@ -94,9 +94,10 @@ class DualExchangeManager:
             # Sumar volumen de bids (compras) vs asks (ventas)
             vol_bids = sum([bid[1] for bid in book["bids"]])
             vol_asks = sum([ask[1] for ask in book["asks"]])
-            
+
             total_vol = vol_bids + vol_asks
-            if total_vol == 0: return 0
+            if total_vol == 0:
+                return 0
 
             # Fórmula de Imbalance: (Bids - Asks) / Total
             imbalance = (vol_bids - vol_asks) / total_vol
@@ -112,13 +113,14 @@ class DualExchangeManager:
         try:
             # Descargar últimas operaciones públicas
             trades = exchange_obj.fetch_trades(symbol, limit=100)
-            if not trades: return False
+            if not trades:
+                return False
 
             # Buscar si alguna operación supera el umbral (ej. $50k de golpe)
             for trade in trades:
                 # trade['cost'] es precio * cantidad
-                if trade['cost'] and trade['cost'] > threshold_usd:
-                    side = trade['side'].upper()
+                if trade["cost"] and trade["cost"] > threshold_usd:
+                    side = trade["side"].upper()
                     print(f"   🐋 BALLENA DETECTADA en {symbol}: {side} de ${trade['cost']:.0f}")
                     return True
             return False
@@ -136,9 +138,7 @@ class DualExchangeManager:
                 return None
 
             print(f"   🌉 PUENTE: Enviando {amount:.2f} USDT -> Refugio")
-            return self.gen.withdraw(
-                "USDT", amount, target_address, params={"network": network}
-            )
+            return self.gen.withdraw("USDT", amount, target_address, params={"network": network})
         except Exception as e:
             print(f"   ❌ Error Puente: {e}")
             return None
