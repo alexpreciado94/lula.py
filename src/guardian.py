@@ -19,9 +19,7 @@ class Guardian:
 
     def analizar_macro(self, symbol, crypto_data):
         try:
-            macro = yf.download(
-                ["^VIX", "DX-Y.NYB"], period="5d", interval="1d", progress=False
-            )
+            macro = yf.download(["^VIX", "DX-Y.NYB"], period="5d", interval="1d", progress=False)
             if isinstance(macro.columns, pd.MultiIndex):
                 vix = macro["Close"]["^VIX"].iloc[-1]
                 dxy = macro["Close"]["DX-Y.NYB"].iloc[-1]

@@ -36,9 +36,7 @@ def fetch_merged_data():
     kraken = ccxt.kraken()
     try:
         bars = kraken.fetch_ohlcv(SYMBOL, TIMEFRAME, limit=LIMIT)
-        df = pd.DataFrame(
-            bars, columns=["ts", "open", "high", "low", "close", "volume"]
-        )
+        df = pd.DataFrame(bars, columns=["ts", "open", "high", "low", "close", "volume"])
         df["ts"] = pd.to_datetime(df["ts"], unit="ms")
         df.set_index("ts", inplace=True)
     except Exception as e:
@@ -69,9 +67,7 @@ def feature_engineering(df):
     print("🧪 Calculando Indicadores (Técnico + VOLUMEN + Macro)...")
     df["rsi"] = df.ta.rsi(close=df["close"], length=14)
     df["ema20"] = df.ta.ema(close=df["close"], length=20)
-    df["atr"] = df.ta.atr(
-        high=df["high"], low=df["low"], close=df["close"], length=14
-    )
+    df["atr"] = df.ta.atr(high=df["high"], low=df["low"], close=df["close"], length=14)
 
     df["obv"] = df.ta.obv(close=df["close"], volume=df["volume"])
     df["mfi"] = df.ta.mfi(
@@ -118,9 +114,7 @@ def train_pipeline():
     joblib.dump(scaler, scaler_path)
     print(f"✅ Scaler guardado: {scaler_path}")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.2, shuffle=False
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, shuffle=False)
 
     print("🧠 Construyendo Red Neuronal (TensorFlow)...")
     model = tf.keras.Sequential(
@@ -135,9 +129,7 @@ def train_pipeline():
         ]
     )
 
-    model.compile(
-        optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
-    )
+    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
     print("🏃 Iniciando entrenamiento...")
     model.fit(
         X_train,
@@ -153,9 +145,7 @@ def convert_to_rknn(tf_model, input_dim):
     print("\n🔄 EXPORTANDO MODELO...")
     onnx_path = os.path.join(DATA_DIR, f"{MODEL_NAME}.onnx")
     spec = (tf.TensorSpec((1, input_dim), tf.float32, name="input"),)
-    model_proto, _ = tf2onnx.convert.from_keras(
-        tf_model, input_signature=spec, opset=13
-    )
+    model_proto, _ = tf2onnx.convert.from_keras(tf_model, input_signature=spec, opset=13)
     # Importante: usar tf2onnx.utils para guardar o directamente onnx
     import onnx
 
@@ -182,9 +172,7 @@ def convert_to_rknn(tf_model, input_dim):
     except ImportError:
         print("\n⚠️  ADVERTENCIA: 'rknn-toolkit2' no encontrado en este PC.")
         print(f"   Se ha generado el archivo intermedio: {onnx_path}")
-        print(
-            "   👉 Opción Docker: Convierte el .onnx a .rknn manualmente"
-        )
+        print("   👉 Opción Docker: Convierte el .onnx a .rknn manualmente")
 
 
 if __name__ == "__main__":

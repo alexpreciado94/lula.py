@@ -35,9 +35,7 @@ def manage_wealth(connection, brain_score, xmr_rsi, xmr_rvol, xmr_price):
         return
     pct = (xmr * xmr_price) / total
 
-    print(
-        f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}"
-    )
+    print(f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}")
 
     if pct >= MAX_XMR_PERCENT:
         print("   ✋ Límite XMR alcanzado.")
@@ -50,9 +48,7 @@ def manage_wealth(connection, brain_score, xmr_rsi, xmr_rvol, xmr_price):
 
     if (xmr_rsi < 35) or (brain_score > 0.85) or is_squeeze:
         print(f"   🧸 Oportunidad! ({msg} Score: {brain_score:.2f})")
-        connection.execute_order(
-            connection.safe, TARGET_COIN, "buy", usdt / xmr_price
-        )
+        connection.execute_order(connection.safe, TARGET_COIN, "buy", usdt / xmr_price)
     else:
         print("   ⏳ Esperando mejor entrada XMR.")
 

@@ -31,9 +31,7 @@ class Brain:
         # Indicadores
         df["rsi"] = df.ta.rsi(close=df["close"], length=14)
         df["ema20"] = df.ta.ema(close=df["close"], length=20)
-        df["atr"] = df.ta.atr(
-            high=df["h"], low=df["l"], close=df["close"], length=14
-        )
+        df["atr"] = df.ta.atr(high=df["h"], low=df["l"], close=df["close"], length=14)
         df["sp500_rsi"] = df.ta.rsi(close=df["sp500"], length=14)
         df["corr_spx"] = df["close"].rolling(24).corr(df["sp500"])
 

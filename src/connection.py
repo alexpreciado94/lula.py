@@ -103,9 +103,7 @@ class DualExchangeManager:
                 return None
 
             print(f"   🌉 PUENTE: Enviando {amount:.2f} USDT -> Refugio")
-            return self.gen.withdraw(
-                "USDT", amount, target_address, params={"network": network}
-            )
+            return self.gen.withdraw("USDT", amount, target_address, params={"network": network})
         except Exception as e:
             print(f"   ❌ Error Puente: {e}")
             return None
