@@ -13,9 +13,7 @@ def detect_liquidity_squeeze(connection, symbol, current_rvol):
     if current_rvol < 2.5:
         return False, ""
 
-    ask_depth, bid_depth = connection.get_order_book_depth(
-        connection.safe, symbol
-    )
+    ask_depth, bid_depth = connection.get_order_book_depth(connection.safe, symbol)
     if ask_depth == 0:
         return False, ""
 
@@ -37,7 +35,9 @@ def manage_wealth(connection, brain_score, xmr_rsi, xmr_rvol, xmr_price):
         return
     pct = (xmr * xmr_price) / total
 
-    print(f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}")
+    print(
+        f"   💼 [REFUGIO] Total: ${total:.2f} | XMR: {pct*100:.1f}% | Cash: ${usdt:.2f}"
+    )
 
     if pct >= MAX_XMR_PERCENT:
         print("   ✋ Límite XMR alcanzado.")
@@ -85,9 +85,7 @@ def strategy_generator(connection, brain, guardian, symbol, sp500):
     if prob > 0.92 and value_held < 50:
         if usdt > 15:
             print(f"   🚀 COMPRA AGRESIVA: {symbol}")
-            connection.execute_order(
-                connection.gen, symbol, "buy", 20.0 / price
-            )
+            connection.execute_order(connection.gen, symbol, "buy", 20.0 / price)
 
     elif (prob < 0.30 or rsi > 75) and value_held > 10:
         print(f"   💰 TAKE PROFIT: {symbol} (RSI: {rsi:.1f})")

@@ -24,7 +24,9 @@ def main():
         print(f"❌ Error Inicio: {e}")
         return
 
-    print(f"✅ Sistema Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}")
+    print(
+        f"✅ Sistema Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}"
+    )
 
     while True:
         try:
