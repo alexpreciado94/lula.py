@@ -96,7 +96,7 @@ Antes del despliegue en producción, se debe validar la latencia y permisos de l
     ```bash
     python trainer.py
     ```
-    *Este proceso descarga datos históricos (Kraken + Yahoo Finance), entrena la red neuronal (TensorFlow) y exporta los artefactos.*
+    *Este proceso descarga datos históricos, entrena la red neuronal (TensorFlow) y exporta los artefactos.*
 
 3.  **Artefactos Resultantes:**
     Se generarán dos archivos críticos en `data/` que deben ser transferidos a la Orange Pi:
