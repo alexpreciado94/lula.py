@@ -106,7 +106,7 @@ def main():
 
     # --- 3. APAGADO SEGURO ---
     if "brain" in locals():
-        brain.release()  # Liberar recursos de la NPU
+        brain.release()  # Liberar recursos de NPU
         print("👋 NPU Liberada. Lula desconectada.")
 
 
