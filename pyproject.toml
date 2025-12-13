@@ -13,7 +13,6 @@ authors = [
     {name = "CypherPunk Dev", email = "lula@sovereign.net"}
 ]
 
-# --- DEPENDENCIAS BASE (Sin pandas_ta, se instala manual) ---
 dependencies = [
     "ccxt>=4.0.0",
     "pandas>=2.0.0",
@@ -25,13 +24,11 @@ dependencies = [
     "requests>=2.31.0"
 ]
 
-# --- DEPENDENCIAS OPCIONALES ---
 [project.optional-dependencies]
 train = [
     "tensorflow>=2.12.0",
     "tf2onnx>=1.14.0",
     "onnx>=1.14.0",
-    # Toolkit para Linux x86 (PC de entrenamiento)
     "rknn-toolkit2 @ https://github.com/rockchip-linux/rknn-toolkit2/raw/master/rknn-toolkit2/packages/rknn_toolkit2-2.3.0-cp310-cp310-linux_x86_64.whl"
 ]
 
@@ -42,6 +39,7 @@ dev = [
 ]
 
 # --- CONFIGURACIÓN DE CALIDAD ---
+
 [tool.ruff]
 line-length = 100
 target-version = "py39"
@@ -52,3 +50,9 @@ ignore = []
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
+
+# --- AÑADIR ESTO AL FINAL ---
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
