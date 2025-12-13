@@ -1,16 +1,17 @@
 import os
 import sys
-import numpy as np
-import pandas as pd
-import pandas_ta as ta
+
 import ccxt
-import yfinance as yf
+import joblib
+import numpy as np
+import onnx
+import pandas as pd
+import pandas_ta as ta  # noqa: F401
 import tensorflow as tf
 import tf2onnx
-import onnx
-import joblib
-from sklearn.preprocessing import MinMaxScaler
+import yfinance as yf
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 # ==========================================
 # CONFIGURACIÓN
@@ -18,12 +19,10 @@ from sklearn.model_selection import train_test_split
 MODEL_NAME = "madness"
 SYMBOL = "XMR/USD"
 TIMEFRAME = "1h"
-LIMIT = 5000  # Necesitamos más historia para las secuencias
-EPOCHS = 35  # Las LSTM necesitan más entreno
+LIMIT = 5000
+EPOCHS = 35
 BATCH_SIZE = 32
-
-# --- NUEVO PARÁMETRO DE MEMORIA ---
-TIME_STEPS = 10  # La IA mirará las últimas 10 horas para decidir
+TIME_STEPS = 10
 
 # Rutas
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -59,7 +58,7 @@ def fetch_merged_data():
         else:
             spx_close = spx.iloc[:, 0]
         spx_close.name = "sp500"
-    except:
+    except Exception:
         print("⚠️ Fallo Yahoo. Usando fallback.")
         spx_close = df["close"]
 
@@ -77,12 +76,18 @@ def feature_engineering(df):
     # Técnico
     df["rsi"] = df.ta.rsi(close=df["close"], length=14)
     df["ema20"] = df.ta.ema(close=df["close"], length=20)
-    df["atr"] = df.ta.atr(high=df["high"], low=df["low"], close=df["close"], length=14)
+    df["atr"] = df.ta.atr(
+        high=df["high"], low=df["low"], close=df["close"], length=14
+    )
 
     # Volumen
     df["obv"] = df.ta.obv(close=df["close"], volume=df["volume"])
     df["mfi"] = df.ta.mfi(
-        high=df["high"], low=df["low"], close=df["close"], volume=df["volume"], length=14
+        high=df["high"],
+        low=df["low"],
+        close=df["close"],
+        volume=df["volume"],
+        length=14,
     )
     df["vol_sma"] = df["volume"].rolling(20).mean()
     df["rvol"] = df["volume"] / df["vol_sma"]
@@ -98,7 +103,17 @@ def feature_engineering(df):
     df.dropna(inplace=True)
 
     # LISTA DE FEATURES (9 ENTRADAS)
-    features_list = ["rsi", "ema20", "atr", "obv", "mfi", "rvol", "close", "sp500", "corr_spx"]
+    features_list = [
+        "rsi",
+        "ema20",
+        "atr",
+        "obv",
+        "mfi",
+        "rvol",
+        "close",
+        "sp500",
+        "corr_spx",
+    ]
 
     return df[features_list].values, df["target"].values, len(features_list)
 
@@ -134,7 +149,9 @@ def train_pipeline():
     X_seq, y_seq = create_sequences(X_scaled, y, TIME_STEPS)
 
     # Separar Train/Test (sin barajar para mantener orden temporal)
-    X_train, X_test, y_train, y_test = train_test_split(X_seq, y_seq, test_size=0.2, shuffle=False)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_seq, y_seq, test_size=0.2, shuffle=False
+    )
 
     print(f"🧠 Construyendo LSTM (Input: {TIME_STEPS}x{input_dim})...")
 
@@ -152,11 +169,17 @@ def train_pipeline():
         ]
     )
 
-    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+    model.compile(
+        optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
+    )
 
     print("🏃 Entrenando...")
     model.fit(
-        X_train, y_train, epochs=EPOCHS, batch_size=BATCH_SIZE, validation_data=(X_test, y_test)
+        X_train,
+        y_train,
+        epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
+        validation_data=(X_test, y_test),
     )
 
     return model, input_dim
@@ -173,7 +196,9 @@ def convert_to_rknn(tf_model, input_dim):
     # Firma de entrada actualizada: (1, TIME_STEPS, FEATURES)
     spec = (tf.TensorSpec((1, TIME_STEPS, input_dim), tf.float32, name="input"),)
 
-    model_proto, _ = tf2onnx.convert.from_keras(tf_model, input_signature=spec, opset=13)
+    model_proto, _ = tf2onnx.convert.from_keras(
+        tf_model, input_signature=spec, opset=13
+    )
     onnx.save(model_proto, onnx_path)
     print(f"✅ Modelo ONNX guardado: {onnx_path}")
 
@@ -188,13 +213,16 @@ def convert_to_rknn(tf_model, input_dim):
         rknn.config(target_platform="rk3588")
 
         if rknn.load_onnx(model=onnx_path) != 0:
-            return print("❌ Error cargar ONNX")
+            print("❌ Error cargar ONNX")
+            return
 
         # Importante: force_builtin_perm=True ayuda con capas LSTM en algunos casos
         if rknn.build(do_quantization=False) != 0:
-            return print("❌ Error build RKNN")
+            print("❌ Error build RKNN")
+            return
         if rknn.export_rknn(rknn_path) != 0:
-            return print("❌ Error export RKNN")
+            print("❌ Error export RKNN")
+            return
 
         print(f"\n🎉 ¡MADNESS (Memory Edition) GENERADO!: {rknn_path}")
 

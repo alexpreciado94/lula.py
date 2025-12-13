@@ -32,7 +32,9 @@ def main():
         print(f"❌ Error Crítico al iniciar: {e}")
         return
 
-    print(f"✅ Sistemas Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}")
+    print(
+        f"✅ Sistemas Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}"
+    )
 
     # --- 2. BUCLE PRINCIPAL (VIGILANCIA PERPETUA) ---
     while True:
@@ -50,7 +52,9 @@ def main():
             for coin in GENERATOR_COINS:
                 try:
                     # Pasamos el 'guardian' para que autorice o bloquee la operación
-                    strategy_generator(connection, brain, guardian, coin, sp500_data)
+                    strategy_generator(
+                        connection, brain, guardian, coin, sp500_data
+                    )
                 except Exception as e:
                     print(f"   ⚠️ Error analizando {coin}: {e}")
 
@@ -72,7 +76,7 @@ def main():
                 xmr_data = connection.get_data(connection.safe, TARGET_COIN)
 
                 if xmr_data:
-                    # Analizamos XMR con la IA (obtenemos probabilidad, RSI, Precio y Volumen Relativo)
+                    # Analizamos XMR con la IA (Prob, RSI, Precio, RVOL)
                     prob, rsi, price, rvol = brain.analyze(xmr_data, sp500_data)
 
                     if prob is not None:
@@ -106,7 +110,7 @@ def main():
 
     # --- 3. APAGADO SEGURO ---
     if "brain" in locals():
-        brain.release()  # Liberar recursos de NPU
+        brain.release()  # Liberar recursos de la NPU
         print("👋 NPU Liberada. Lula desconectada.")
 
 
