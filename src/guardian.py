@@ -5,83 +5,65 @@ import requests
 
 class Guardian:
     def __init__(self):
-        print("🛡️ Inicializando El Guardián (Lógica Macro)...")
+        print("🛡️ Inicializando El Guardián (Filtro Macro)...")
 
     def obtener_fear_and_greed(self):
-        """
-        Regla 4: Teoría de la Opinión Contraria.
-        Descarga el índice de Miedo y Codicia de alternative.me
-        """
+        """Consulta el índice de Miedo y Codicia (0-100)"""
         try:
             url = "https://api.alternative.me/fng/"
             r = requests.get(url, timeout=5)
             data = r.json()
             return int(data['data'][0]['value'])
         except:
-            print("⚠️ Error obteniendo Fear & Greed.")
-            return 50 # Neutro por defecto
+            return 50 # Valor neutro si falla la API
 
-    def analizar_macro(self, symbol_crypto, crypto_data):
+    def analizar_macro(self, symbol, crypto_data):
         """
-        Analiza el estado del mundo y devuelve un 'Permiso de Trading'.
-        Retorna: (Puede_Operar: bool, Mensaje: str)
+        Devuelve: (True/False, "Razón")
         """
-        # 1. Descarga de Datos Macro (VIX, DXY, SP500)
+        # 1. DATOS MACRO (VIX y DXY)
         try:
-            # ^VIX = Volatilidad (Miedo)
-            # DX-Y.NYB = Índice Dólar (Poder del sistema FIAT)
-            tickers = ["^VIX", "DX-Y.NYB"]
-            macro = yf.download(tickers, period="1mo", interval="1d", progress=False)
+            # Bajamos datos recientes
+            macro = yf.download(["^VIX", "DX-Y.NYB"], period="5d", interval="1d", progress=False)
             
-            # Últimos valores
-            # Manejo seguro de MultiIndex de Yahoo
-            try:
-                vix_now = macro['Close']['^VIX'].iloc[-1]
-                dxy_now = macro['Close']['DX-Y.NYB'].iloc[-1]
-            except:
-                # Fallback si la estructura cambia
-                vix_now = macro.iloc[-1, 0]
-                dxy_now = macro.iloc[-1, 1]
-                
-        except Exception as e:
-            return True, "⚠️ Guardián ciego (Sin datos Yahoo). Operando con precaución."
+            # Manejo de índices de Yahoo
+            if isinstance(macro.columns, pd.MultiIndex):
+                vix = macro['Close']['^VIX'].iloc[-1]
+                dxy = macro['Close']['DX-Y.NYB'].iloc[-1]
+            else:
+                # Fallback simple
+                vix = macro.iloc[-1, 0] 
+                dxy = macro.iloc[-1, 1]
+        except:
+            # Si falla Yahoo, permitimos operar pero con aviso (Fail-Open)
+            return True, "⚠️ Sin datos Macro (Yahoo caído)."
 
-        # 2. Dato de Sentimiento (Fear & Greed)
+        # 2. SENTIMIENTO
         fng = self.obtener_fear_and_greed()
 
-        # --- APLICACIÓN DE TUS REGLAS ---
+        # --- REGLAS DEL GUARDIÁN ---
 
-        # REGLA 1: FILTRO DE TENDENCIA (SMA 200)
-        # Calculamos la media de 200 sesiones en los datos crypto
-        crypto_df = pd.DataFrame(crypto_data, columns=['ts', 'o', 'h', 'l', 'close', 'v'])
-        sma200 = crypto_df.ta.sma(close=crypto_df['close'], length=200)
-        
-        if sma200 is not None:
-            precio_actual = crypto_df['close'].iloc[-1]
-            sma200_val = sma200.iloc[-1]
-            if precio_actual < sma200_val:
-                # Estamos en mercado bajista secular.
-                # Solo permitimos compras si hay Pánico extremo (Rebote)
-                if fng > 20: 
-                    return False, f"⛔ Tendencia Bajista (Precio < SMA200). Solo opero rebotes extremos."
+        # A) VIX (Índice del Miedo): Si > 30, el mercado está roto.
+        if vix > 30:
+            return False, f"⛔ VIX Crítico ({vix:.1f}). Riesgo de crash."
 
-        # REGLA 2: CONTROL DE DAÑOS (VIX)
-        if vix_now > 25:
-            return False, f"⛔ VIX Crítico ({vix_now:.1f}). Miedo extremo en Wall Street."
-        
-        # REGLA 4: OPINIÓN CONTRARIA (Si todos son codiciosos, vende/no compres)
-        if fng > 80:
-            return False, f"⛔ Euforia irracional (F&G: {fng}). Peligro de desplome."
+        # B) DXY (Dólar): Si el dólar está parabólico (>107), cripto sufre.
+        if dxy > 107:
+            return False, f"⛔ Dólar demasiado fuerte ({dxy:.1f})."
 
-        # REGLA 5 & 7: ANÁLISIS DE PODER (DXY - El Dólar)
-        # Si el Dólar se dispara, los activos de riesgo (Cripto) sufren.
-        # Asumimos que DXY > 106 es "Intervención/Pánico Global"
-        if dxy_now > 106:
-            return False, f"⛔ El Dólar está destruyendo todo (DXY: {dxy_now:.1f}). Cash is King."
+        # C) TENDENCIA (SMA 200)
+        # Convertimos los datos de Kraken a DataFrame para calcular la media
+        df = pd.DataFrame(crypto_data, columns=['ts', 'o', 'h', 'l', 'close', 'v'])
+        if len(df) > 200:
+            sma200 = df.ta.sma(close=df['close'], length=200).iloc[-1]
+            precio = df['close'].iloc[-1]
+            
+            # Si estamos debajo de la media de 200, solo compramos si hay pánico extremo (Rebote)
+            if precio < sma200 and fng > 25:
+                return False, f"⛔ Tendencia Bajista (Precio < SMA200)."
 
-        # REGLA 6: ESTOICISMO (Comprar en pánico)
-        if fng < 15:
-            return True, "🟢 PÁNICO TOTAL DETECTADO. Aplicando Estoicismo: COMPRAR SANGRE."
+        # D) CONTRARIAN (Si todos son codiciosos, cuidado)
+        if fng > 85:
+            return False, f"⛔ Euforia Extrema (F&G: {fng}). Esperando corrección."
 
-        # Si pasamos todos los filtros
-        return True, f"✅ Macro Estable (VIX: {vix_now:.1f} | DXY: {dxy_now:.1f} | F&G: {fng})"
+        return True, "✅ Mercado Estable."
