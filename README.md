@@ -10,16 +10,30 @@
 🙏 **Blessed by Sor. Concha** — `#CypherPunk`
 
 ---
+---
 
-## 📝 DESCRIPCIÓN
+## 📝 Descripción
 
-**Lula** es una IA de trading, diseñada para ejecutarse en **Docker** 🐳 dentro de una **Orange Pi 5 Max**.
+**Lula** es un sistema autónomo de **generación y preservación de capital**, impulsado por Inteligencia Artificial y diseñado para la soberanía, desconfianza estructural y autocustodia. Opera sobre el silicio de una Orange Pi 5 Max, acelerada por NPU.   Su función es clara: **extraer valor del caos**.
 
-Su lógica (*Lullaby*) especula en mercados volátiles para acumular automáticamente **Monero (XMR)** 🔒 como reserva de valor privada.
+### ⚙️ Flujo Operativo
 
-### ☠️ El Modus Operandi
+- **Generación de Cash**  
+  Explotación sistemática de ineficiencias en mercados líquidos (BTC, ETH, SOL) para producir flujo constante de USDT.
 
-1.  **Hit & Run:** monedas.
+- **Rotación de Liquidez**  
+  Conversión automática del excedente de cash en activos fungibles y orientados a privacidad (XMR).
+
+- **Custodia Soberana**  
+  Retiro a almacenamiento en frío. Sin intermediarios. Sin confianza delegada.
+
+## 🤓 Filosofía
+
+Lula extrae volatilidad y desconfianza para generar cash, y utiliza ese cash para comprar privacidad.  
+Automatiza la disciplina, reduce la exposición y saca el capital del foco.  
+La visibilidad es riesgo. La automatización es defensa. La autocustodia es ley.
+
+**Lula es magia y disciplina, ejecución constante y una arquitectura pensada para operar 24/7, incluso cuando tú descansas.**
 
 ---
 
