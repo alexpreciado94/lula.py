@@ -1,0 +1,30 @@
+name: 🛠️ Fix Code Formatting
+
+# Se activa manualmente con un botón
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  auto-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: 📦 Instalar Black
+        run: pip install black
+
+      - name: 🎨 Ejecutar Black (Auto-Fix)
+        run: black src/ scripts/
+
+      - name: 💾 Guardar cambios
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 Auto-fix: Black formatting applied"
