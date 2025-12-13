@@ -124,4 +124,3 @@ docker compose up -d --build
 Distribuido bajo la licencia **Apache 2.0**.
 
 **Descargo de Responsabilidad:** Este software es experimental. El trading algorítmico conlleva riesgos financieros significativos. El autor no se hace responsable de pérdidas por fallos de software, errores de API o volatilidad del mercado.
-```
