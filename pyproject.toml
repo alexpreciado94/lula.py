@@ -1,22 +1,24 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "lula-bot"
-version = "2.0.0"
-description = "AI Crypto Trading Bot with Monero Focus"
+version = "2.1.0"
+description = "AI Crypto Trading Bot with Monero Focus (Lullaby Protocol)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "Apache-2.0"}
-authors = [{name = "CypherPunk Dev", email = "lula@sovereign.net"}]
+authors = [
+    {name = "CypherPunk Dev", email = "lula@sovereign.net"}
+]
 
-# --- 1. DEPENDENCIAS BASE (Para la Orange Pi / Docker) ---
-# Estas se instalan siempre. Son ligeras.
+# DEPENDENCIAS PRINCIPALES (Runtime)
 dependencies = [
     "ccxt>=4.0.0",
     "pandas>=2.0.0",
-    "pandas_ta @ git+https://github.com/twopirllc/pandas-ta.git@development",
+    # FIX CRÍTICO: Usamos el ZIP directo para evitar errores de autenticación git en CI/CD
+    "pandas_ta @ https://github.com/twopirllc/pandas-ta/archive/refs/heads/development.zip",
     "numpy>=1.24.0",
     "joblib>=1.3.0",
     "scikit-learn>=1.3.0",
@@ -25,16 +27,14 @@ dependencies = [
     "requests>=2.31.0"
 ]
 
-# --- 2. DEPENDENCIAS OPCIONALES (Para tu PC / Kali) ---
-# Estas SOLO se instalan si tú se lo pides explícitamente.
+# DEPENDENCIAS OPCIONALES (Entrenamiento y Desarrollo)
 [project.optional-dependencies]
 train = [
     "tensorflow",
     "tf2onnx",
     "onnx",
-    # El toolkit de RKNN hay que instalarlo vía URL directa para Linux x86
-    # (Asegúrate de que esta URL coincida con tu versión de Python en Kali, ej 3.10 o 3.11)
-    "rknn-toolkit2 @ https://github.com/rockchip-linux/rknn-toolkit2/raw/master/rknn-toolkit2/packages/rknn_toolkit2-2.3.0-cp311-cp311-linux_x86_64.whl"
+    # Toolkit para Linux x86 (PC de entrenamiento)
+    "rknn-toolkit2 @ https://github.com/rockchip-linux/rknn-toolkit2/raw/master/rknn-toolkit2/packages/rknn_toolkit2-2.3.0-cp310-cp310-linux_x86_64.whl"
 ]
 
 dev = [
@@ -42,3 +42,15 @@ dev = [
     "black",
     "pytest"
 ]
+
+# CONFIGURACIÓN DE CALIDAD
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]

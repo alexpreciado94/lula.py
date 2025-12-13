@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Probamos en 3.9 (Orange Pi) y 3.10 (PC moderno)
         python-version: ["3.9", "3.10"]
 
     steps:
@@ -21,24 +22,22 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+        cache: 'pip' # Activa caché para ir más rápido en siguientes runs
 
     - name: 📦 Instalar dependencias
       run: |
         python -m pip install --upgrade pip
-        # Instalamos las dependencias de desarrollo del pyproject.toml
+        # CRÍTICO: Instalar herramientas de compilación antes de procesar el ZIP
+        python -m pip install --upgrade setuptools wheel
+        # Instalar el proyecto con dependencias de desarrollo
         pip install .[dev]
 
     - name: 🔎 Linting con Ruff
       run: |
-        # Revisa errores de sintaxis y estilo en la carpeta src y scripts
+        # Busca errores en el código fuente y scripts
         ruff check src/ scripts/
-        
+
     - name: 🎨 Verificar formato (Black)
       run: |
-        # Verifica si el código está bien formateado (sin modificarlo)
+        # Comprueba si el código cumple el estándar de estilo
         black --check src/ scripts/
-
-    # Opcional: Si en el futuro añades tests unitarios en la carpeta tests/
-    # - name: 🧪 Ejecutar Tests
-    #   run: |
-    #     pytest tests/
