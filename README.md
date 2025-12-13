@@ -10,7 +10,6 @@
 🙏 **Blessed by Sor. Concha** — `#CypherPunk`
 
 ---
----
 
 ## 📝 Descripción
 
@@ -29,9 +28,7 @@
 
 ## 🤓 Filosofía
 
-Lula extrae volatilidad y desconfianza para generar cash, y utiliza ese cash para comprar privacidad.  
-Automatiza la disciplina, reduce la exposición y saca el capital del foco.  
-La visibilidad es riesgo. La automatización es defensa. La autocustodia es ley.
+Lula extrae volatilidad y desconfianza para generar cash, y utiliza ese cash para comprar privacidad. Automatiza la disciplina, reduce la exposición y saca el capital del foco. La visibilidad es riesgo. La automatización es defensa. La autocustodia es ley.
 
 **Lula es magia y disciplina, ejecución constante y una arquitectura pensada para operar 24/7, incluso cuando tú descansas.**
 
