@@ -4,21 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lula-bot"
-version = "2.1.1"
-description = "IA Crypto Trading Bot con enfoque en Monero y arquitectura NPU (RK3588)"
+version = "2.1.2"
+description = "AI Crypto Trading Bot (Lullaby Protocol)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "Apache-2.0"}
-authors = [
-    {name = "CypherPunk Dev", email = "lula@sovereign.net"}
-]
+authors = [{name = "CypherPunk Dev", email = "lula@sovereign.net"}]
 
-# DEPENDENCIAS BASE (Lo que se instala en la Orange Pi / Docker)
+# --- DEPENDENCIAS (SIN PANDAS_TA) ---
 dependencies = [
     "ccxt>=4.0.0",
     "pandas>=2.0.0",
-    # FIX: URL directa al ZIP de la rama development para evitar errores de Git y 404
-    "pandas_ta @ https://github.com/twopirllc/pandas-ta/archive/development.zip",
+    # "pandas_ta...",  <-- BORRADO. Lo instalaremos manualmente desde libs/
     "numpy>=1.24.0",
     "joblib>=1.3.0",
     "scikit-learn>=1.3.0",
@@ -27,31 +24,21 @@ dependencies = [
     "requests>=2.31.0"
 ]
 
-# DEPENDENCIAS EXTRA (Entrenamiento en Kali y Desarrollo)
 [project.optional-dependencies]
 train = [
     "tensorflow>=2.12.0",
     "tf2onnx>=1.14.0",
     "onnx>=1.14.0",
-    # Toolkit para conversión NPU (Linux x86_64)
+    # Toolkit Linux x86
     "rknn-toolkit2 @ https://github.com/rockchip-linux/rknn-toolkit2/raw/master/rknn-toolkit2/packages/rknn_toolkit2-2.3.0-cp310-cp310-linux_x86_64.whl"
 ]
+dev = ["ruff", "black", "pytest"]
 
-dev = [
-    "ruff",
-    "black",
-    "pytest"
-]
-
-# CONFIGURACIÓN DE CALIDAD DE CÓDIGO (RUFF)
 [tool.ruff]
 line-length = 100
 target-version = "py39"
-
 [tool.ruff.lint]
-# E: Errores, F: Pyflakes, I: Orden de imports
 select = ["E", "F", "I"]
 ignore = []
-
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
