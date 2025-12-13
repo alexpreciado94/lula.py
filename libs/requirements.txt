@@ -1,9 +1,0 @@
-ccxt
-pandas
-pandas_ta
-numpy
-joblib
-scikit-learn
-python-dotenv
-yfinance
-requests
