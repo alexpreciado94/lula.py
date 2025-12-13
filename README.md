@@ -1,7 +1,36 @@
-# lula.py 💶
+# 💶 lula.py
 
-### High-Performance AI Crypto Trading Bot - Monero Sovereign Accumulator
-**Optimized for Orange Pi 5 Max (RK3588 NPU). [Python 3.9]**
+> **Artificial Intelligence for CryptoTrading — Expert of Monero**  
+> *Made with LOVE for Orange Pi 5 Max — Python 3.9* 🐼
+
+| **LICENSE** | **HARDWARE** | **MODE** |
+| :--- | :--- | :--- |
+| Apache 2.0 📜 | Orange Pi 5 Max 🍊 | Need $$$ 🤑 |
+
+🙏 **Blessed by Sor. Concha** — `#CypherPunk`
+
+---
+
+## 📝 Descripción
+
+**Lula** es un sistema autónomo de **generación y preservación de capital**, impulsado por Inteligencia Artificial y diseñado para la soberanía, desconfianza estructural y autocustodia. Opera sobre el silicio de una Orange Pi 5 Max, acelerada por NPU.   Su función es clara: **extraer valor del caos**.
+
+### ⚙️ Flujo Operativo
+
+- **Generación de Cash**  
+  Explotación sistemática de los mercados con mayor liquidez, para producir flujo constante de USDT.
+
+- **Rotación de Liquidez**  
+  Conversión automática del excedente de cash en activos fungibles y orientados a privacidad (XMR).
+
+- **Custodia Soberana**  
+  Retiro a almacenamiento en frío. Sin intermediarios. Sin confianza delegada.
+
+## 🤓 Filosofía
+
+Lula extrae volatilidad y desconfianza para generar cash, y utiliza ese cash para comprar privacidad. Automatiza la disciplina, reduce la exposición y saca el capital del foco. La visibilidad es riesgo. La automatización es defensa. La autocustodia es ley.
+
+**Lula es magia y disciplina, ejecución constante y una arquitectura pensada para operar 24/7, incluso cuando tú descansas.**
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform](https://img.shields.io/badge/Hardware-Orange_Pi_5_Max-orange)](http://www.orangepi.org/)
@@ -17,16 +46,7 @@ El sistema utiliza una **Arquitectura de Doble Exchange** para mitigar riesgos d
 
 1.  **🏭 Motor Generador (Exchange A):** Opera en pares de alta liquidez (BTC, ETH, SOL) utilizando inferencia neuronal (NPU) para *swing trading* agresivo. El objetivo es maximizar el balance en USDT.
 2.  **🌉 Puente de Liquidez (The Bridge):** Al alcanzar umbrales de beneficio, el sistema ejecuta automáticamente transferencias *cross-exchange* (vía TRC20) hacia el entorno seguro.
-3.  **🛡️ Motor de Refugio (Exchange B):** Ejecuta órdenes de compra pasivas sobre XMR/USDT basadas en análisis de volumen y RSI, minimizando el deslizamiento (*slippage*).
-4.  **❄️ Custodia Fría:** Automatización de retiros hacia hardware wallets (Trezor) para asegurar la propiedad final de los activos.
-
----
-
-## ⚡ Requisitos de Hardware
-
-*   **Dispositivo:** Orange Pi 5 Max (SoC Rockchip RK3588).
-*   **Alimentación:** ⚠️ **Fuente PD 5V/4A (20W) Mínimo.** El uso de fuentes inestables provocará corrupción de datos en operaciones de I/O intensivas (Docker/NPU).
-*   **Almacenamiento:** NVMe SSD recomendado para logs y base de datos.
+3.  **🛡️ Motor de Refugio (Exchange B):** Ejecuta órdenes de compra pasivas sobre XMR/USDT basadas en análisis de volumen y RSI, minimiza
 
 ---
 
