@@ -1,130 +1,119 @@
-# 💶 lula.py
+# lula.py 💶
 
-> **Artificial Intelligence for CryptoTrading — Expert of Monero**  
-> *Made with LOVE for Orange Pi 5 Max — Python 3.9* 🐼
+### High-Performance AI Crypto Trading Bot - Monero Sovereign Accumulator
+**Optimized for Orange Pi 5 Max (RK3588 NPU). [Python 3.9]**
 
-| **LICENSE** | **HARDWARE** | **MODE** |
-| :--- | :--- | :--- |
-| Apache 2.0 📜 | Orange Pi 5 Max 🍊 | Need $$$ 🤑 |
-
-🙏 **Blessed by Sor. Concha** — `#CypherPunk`
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Platform](https://img.shields.io/badge/Hardware-Orange_Pi_5_Max-orange)](http://www.orangepi.org/)
+[![Architecture](https://img.shields.io/badge/Architecture-Dual_Exchange-red)](https://ccxt.network/)
 
 ---
 
-## 📝 Descripción
+## 📝 Descripción Técnica
 
-**Lula** es un sistema autónomo de **generación y preservación de capital**, impulsado por Inteligencia Artificial y diseñado para la soberanía, desconfianza estructural y autocustodia. Opera sobre el silicio de una Orange Pi 5 Max, acelerada por NPU.   Su función es clara: **extraer valor del caos**.
+**Lula** es un sistema de trading algorítmico diseñado para operar en el borde (*Edge Computing*). Su objetivo es la acumulación soberana de **Monero (XMR)** mediante una estrategia de arbitraje temporal y generación de flujo de caja en mercados volátiles.
 
-### ⚙️ Flujo Operativo
+El sistema utiliza una **Arquitectura de Doble Exchange** para mitigar riesgos de contraparte y maximizar la privacidad:
 
-- **Generación de Cash**  
-  Explotación sistemática de los mercados con mayor liquidez, para producir flujo constante de USDT.
-
-- **Rotación de Liquidez**  
-  Conversión automática del excedente de cash en activos fungibles y orientados a privacidad (XMR).
-
-- **Custodia Soberana**  
-  Retiro a almacenamiento en frío. Sin intermediarios. Sin confianza delegada.
-
-## 🤓 Filosofía
-
-Lula extrae volatilidad y desconfianza para generar cash, y utiliza ese cash para comprar privacidad. Automatiza la disciplina, reduce la exposición y saca el capital del foco. La visibilidad es riesgo. La automatización es defensa. La autocustodia es ley.
-
-**Lula es magia y disciplina, ejecución constante y una arquitectura pensada para operar 24/7, incluso cuando tú descansas.**
+1.  **🏭 Motor Generador (Exchange A):** Opera en pares de alta liquidez (BTC, ETH, SOL) utilizando inferencia neuronal (NPU) para *swing trading* agresivo. El objetivo es maximizar el balance en USDT.
+2.  **🌉 Puente de Liquidez (The Bridge):** Al alcanzar umbrales de beneficio, el sistema ejecuta automáticamente transferencias *cross-exchange* (vía TRC20) hacia el entorno seguro.
+3.  **🛡️ Motor de Refugio (Exchange B):** Ejecuta órdenes de compra pasivas sobre XMR/USDT basadas en análisis de volumen y RSI, minimizando el deslizamiento (*slippage*).
+4.  **❄️ Custodia Fría:** Automatización de retiros hacia hardware wallets (Trezor) para asegurar la propiedad final de los activos.
 
 ---
 
-## 1. ⚙️ INSTALACIÓN EN ORANGE PI 5 MAX
+## ⚡ Requisitos de Hardware
 
-**1) Conéctate por SSH:**
-```bash
-ssh root@<TU_IP>
-```
-
-**2) Entra en el directorio de scripts:**
-```bash
-cd lula_project/scripts/
-chmod +x install_lula.sh
-```
-
-**3) Ejecuta el instalador:**
-```bash
-sudo ./install_lula.sh
-```
-
-> ⚠️ **NOTA:** Al finalizar, asegúrate de subir `src/`, `data/` y `.env` dentro de `lula_project/`.
+*   **Dispositivo:** Orange Pi 5 Max (SoC Rockchip RK3588).
+*   **Alimentación:** ⚠️ **Fuente PD 5V/4A (20W) Mínimo.** El uso de fuentes inestables provocará corrupción de datos en operaciones de I/O intensivas (Docker/NPU).
+*   **Almacenamiento:** NVMe SSD recomendado para logs y base de datos.
 
 ---
 
-## 2. 🐙 TEST DE CONEXIÓN A KRAKEN
+## 🛠️ FASE 1: Despliegue de Infraestructura
 
-**1) Instala dependencias temporales:**
-```bash
-pip install ccxt python-dotenv
-```
+El sistema se despliega mediante un script automatizado que configura Docker, los drivers de la NPU y el entorno de ejecución.
 
-**2) Ejecuta el test:**
-```bash
-cd lula_project/scripts/
-python3 connection_test.py
-```
+1.  **Acceso SSH:**
+    ```bash
+    ssh root@<IP_ORANGE_PI>
+    ```
 
----
+2.  **Ejecución del Instalador:**
+    ```bash
+    cd lula_project/scripts/
+    chmod +x install_lula.sh
+    sudo ./install_lula.sh
+    ```
 
-## 3. 🧠 ENTRENAMIENTO EN PC (Kali / Ubuntu)
-
-El entrenamiento generará el modelo `madness.rknn` optimizado para la NPU RK3588.
-
-**1) Instalar dependencias del sistema:**
-```bash
-sudo apt install -y python3-dev python3-pip python3-venv libxslt1-dev zlib1g-dev libgl1-mesa-glx
-```
-
-**2) Crear entorno virtual:**
-```bash
-cd lula_project/scripts/trainer
-python3 -m venv venv
-source venv/bin/activate
-```
-
-**3) Instalar dependencias de Python:**
-```bash
-pip install -r trainer_requirements.txt
-```
-
-**4) Ejecutar el entrenador:**
-```bash
-python trainer.py
-```
+3.  **Provisión de Archivos (Manual):**
+    Transfiere los siguientes activos al directorio `/home/usuario/lula_project` usando SFTP/SCP:
+    *   Directorio `src/` (Código fuente).
+    *   Archivo `.env` (Configuración de API Keys para ambos exchanges).
+    *   Archivo `libs/pandas_ta.zip` (Dependencia vendorizada).
 
 ---
 
-## 4. 🔮 GENERACIÓN DE `madness.rknn`
+## 🔌 FASE 2: Verificación de Conectividad
 
-### OPCIÓN A (NATIVA) 🖥️
-Si tienes instalado `rknn-toolkit2`, el archivo `.rknn` aparecerá automáticamente en `data/`.
+Antes del despliegue en producción, se debe validar la latencia y permisos de las APIs de ambos exchanges.
 
-### OPCIÓN B (DOCKER) 🐳
-Ejecuta el siguiente comando para convertir el modelo usando un contenedor:
+1.  **Instalación de dependencias de test:**
+    ```bash
+    pip install ccxt python-dotenv
+    ```
 
-```bash
-docker run -v $(pwd)/../../data:/data --entrypoint python3 \
-rockchip/rknn-toolkit2 \
--c "from rknn.api import RKNN; r=RKNN(verbose=False); r.config(target_platform='rk3588'); r.load_onnx('/data/madness.onnx'); r.build(do_quantization=False); r.export_rknn('/data/madness.rknn')"
-```
+2.  **Ejecución del Diagnóstico:**
+    ```bash
+    cd lula_project/scripts/
+    python3 connection_test.py
+    ```
+    *Verificar salida exitosa para "GENERADOR" y "REFUGIO".*
 
 ---
 
-## 5. 🚀 EJECUCIÓN EN PRODUCCIÓN (ORANGE PI)
+## 🧠 FASE 3: Entrenamiento de Modelos (Off-Board)
 
-**Levantar Lula:**
+**Entorno:** PC / Servidor Linux x86_64 (Kali/Ubuntu).
+**Objetivo:** Generar el modelo `madness.rknn` optimizado para la NPU.
+
+1.  **Preparación del Entorno:**
+    ```bash
+    cd lula_project/scripts/trainer
+    python3 -m venv venv && source venv/bin/activate
+    pip install -r trainer_requirements.txt
+    ```
+
+2.  **Ejecución del Pipeline:**
+    ```bash
+    python trainer.py
+    ```
+    *Este proceso descarga datos históricos (Kraken + Yahoo Finance), entrena la red neuronal (TensorFlow) y exporta los artefactos.*
+
+3.  **Artefactos Resultantes:**
+    Se generarán dos archivos críticos en `data/` que deben ser transferidos a la Orange Pi:
+    *   `madness.rknn` (Modelo compilado).
+    *   `scaler.pkl` (Objeto de normalización).
+
+---
+
+## 🐳 FASE 4: Ejecución en Producción
+
+Con la infraestructura lista y los modelos cargados:
+
 ```bash
 cd lula_project/docker
 docker compose up -d --build
 ```
 
-**Comandos útiles:**
-*   Ver logs: `docker logs -f lula_bot` 📜
-*   Apagar: `docker compose down` 🛑
+**Monitorización:**
+*   Logs en tiempo real: `docker logs -f lula_bot`
+*   Gestión de contenedores: Puerto `9000` (Portainer).
 
 ---
+
+### ⚖️ Licencia
+Distribuido bajo la licencia **Apache 2.0**.
+
+**Descargo de Responsabilidad:** Este software es experimental. El trading algorítmico conlleva riesgos financieros significativos. El autor no se hace responsable de pérdidas por fallos de software, errores de API o volatilidad del mercado.
+```
