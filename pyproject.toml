@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lula-bot"
-version = "2.1.2"
+version = "2.1.3"
 description = "AI Crypto Trading Bot (Lullaby Protocol)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -38,8 +38,9 @@ dev = [
     "pytest"
 ]
 
-# --- CONFIGURACIÓN DE CALIDAD ---
+# --- AQUÍ ESTÁ LA SOLUCIÓN DEL ERROR ---
 
+# 1. Configuración de RUFF (Linter)
 [tool.ruff]
 line-length = 100
 target-version = "py39"
@@ -51,8 +52,8 @@ ignore = []
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 
-# --- AÑADIR ESTO AL FINAL ---
+# 2. Configuración de BLACK (Formateador)
+# Forzamos a Black a usar 100 caracteres también para que no se peleen.
 [tool.black]
 line-length = 100
 target-version = ['py39']
-include = '\.pyi?$'

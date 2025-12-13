@@ -1,6 +1,5 @@
 name: 🛠️ Fix Code Formatting
 
-# Se activa manualmente con un botón
 on: workflow_dispatch
 
 permissions:
@@ -21,10 +20,11 @@ jobs:
       - name: 📦 Instalar Black
         run: pip install black
 
-      - name: 🎨 Ejecutar Black (Auto-Fix)
+      - name: 🎨 Ejecutar Formateo (Black)
+        # Esto usará la configuración de 100 caracteres del pyproject.toml
         run: black src/ scripts/
 
-      - name: 💾 Guardar cambios
+      - name: 💾 Guardar Cambios
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "🤖 Auto-fix: Black formatting applied"
+          commit_message: "🤖 Auto-fix: Synchronized Black formatting (100 chars)"
