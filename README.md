@@ -19,9 +19,7 @@ Su lógica (*Lullaby*) especula en mercados volátiles para acumular automática
 
 ### ☠️ El Modus Operandi
 
-1.  **Hit & Run (El Golpe):** Lula monitorea las monedas ruidosas (BTC, ETH, SOL). Cuando detecta una oportunidad matemática, entra, golpea y extrae liquidez (USDT) antes de que el mercado reaccione.
-2.  **Ghost Protocol (El Fantasma):** El dinero en un exchange es dinero vigilado. Lula no deja rastro: convierte automáticamente el botín a **Monero (XMR)**, moviendo el valor fuera del radar.
-3.  **System Shutdown:** El mercado nunca cierra, pero tú sí. Lula absorbe el estrés y la paranoia del trading 24/7 para que tú puedas desconectar.
+1.  **Hit & Run:** monedas.
 
 ---
 
