@@ -38,18 +38,6 @@ Lula extrae volatilidad y desconfianza para generar cash, y utiliza ese cash par
 
 ---
 
-## 📝 Descripción Técnica
-
-**Lula** es un sistema de trading algorítmico diseñado para operar en el borde (*Edge Computing*). Su objetivo es la acumulación soberana de **Monero (XMR)** mediante una estrategia de arbitraje temporal y generación de flujo de caja en mercados volátiles.
-
-El sistema utiliza una **Arquitectura de Doble Exchange** para mitigar riesgos de contraparte y maximizar la privacidad:
-
-1.  **🏭 Motor Generador (Exchange A):** Opera en pares de alta liquidez (BTC, ETH, SOL) utilizando inferencia neuronal (NPU) para *swing trading* agresivo. El objetivo es maximizar el balance en USDT.
-2.  **🌉 Puente de Liquidez (The Bridge):** Al alcanzar umbrales de beneficio, el sistema ejecuta automáticamente transferencias *cross-exchange* (vía TRC20) hacia el entorno seguro.
-3.  **🛡️ Motor de Refugio (Exchange B):** Ejecuta órdenes de compra pasivas sobre XMR/USDT basadas en análisis de volumen y RSI, minimiza
-
----
-
 ## 🛠️ FASE 1: Despliegue de Infraestructura
 
 El sistema se despliega mediante un script automatizado que configura Docker, los drivers de la NPU y el entorno de ejecución.
