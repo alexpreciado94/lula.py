@@ -25,16 +25,22 @@ jobs:
 
     - name: 📦 Instalar dependencias
       run: |
+        # 1. Actualizar herramientas de compilación
         python -m pip install --upgrade pip setuptools wheel
         
-        # 1. Instalar la librería local (que ya está en el repo)
+        # 2. INSTALACIÓN MANUAL (OFFLINE)
+        # Instalamos pandas_ta desde el archivo zip que subiste a libs/
+        # Esto evita errores 404 o de autenticación con git
         pip install libs/pandas_ta.zip
         
-        # 2. Instalar el resto del proyecto
+        # 3. INSTALACIÓN DEL RESTO DEL PROYECTO
+        # Instala las dependencias definidas en pyproject.toml
         pip install .[dev]
 
     - name: 🔎 Linting con Ruff
-      run: ruff check src/ scripts/
+      run: |
+        ruff check src/ scripts/
 
     - name: 🎨 Verificar formato (Black)
-      run: black --check src/ scripts/
+      run: |
+        black --check src/ scripts/
