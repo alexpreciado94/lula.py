@@ -76,9 +76,7 @@ def feature_engineering(df):
     # Técnico
     df["rsi"] = df.ta.rsi(close=df["close"], length=14)
     df["ema20"] = df.ta.ema(close=df["close"], length=20)
-    df["atr"] = df.ta.atr(
-        high=df["high"], low=df["low"], close=df["close"], length=14
-    )
+    df["atr"] = df.ta.atr(high=df["high"], low=df["low"], close=df["close"], length=14)
 
     # Volumen
     df["obv"] = df.ta.obv(close=df["close"], volume=df["volume"])
@@ -149,9 +147,7 @@ def train_pipeline():
     X_seq, y_seq = create_sequences(X_scaled, y, TIME_STEPS)
 
     # Separar Train/Test (sin barajar para mantener orden temporal)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_seq, y_seq, test_size=0.2, shuffle=False
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_seq, y_seq, test_size=0.2, shuffle=False)
 
     print(f"🧠 Construyendo LSTM (Input: {TIME_STEPS}x{input_dim})...")
 
@@ -169,9 +165,7 @@ def train_pipeline():
         ]
     )
 
-    model.compile(
-        optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
-    )
+    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
     print("🏃 Entrenando...")
     model.fit(
@@ -196,9 +190,7 @@ def convert_to_rknn(tf_model, input_dim):
     # Firma de entrada actualizada: (1, TIME_STEPS, FEATURES)
     spec = (tf.TensorSpec((1, TIME_STEPS, input_dim), tf.float32, name="input"),)
 
-    model_proto, _ = tf2onnx.convert.from_keras(
-        tf_model, input_signature=spec, opset=13
-    )
+    model_proto, _ = tf2onnx.convert.from_keras(tf_model, input_signature=spec, opset=13)
     onnx.save(model_proto, onnx_path)
     print(f"✅ Modelo ONNX guardado: {onnx_path}")
 

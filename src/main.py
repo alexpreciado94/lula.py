@@ -32,9 +32,7 @@ def main():
         print(f"❌ Error Crítico al iniciar: {e}")
         return
 
-    print(
-        f"✅ Sistemas Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}"
-    )
+    print(f"✅ Sistemas Online. Gen: {connection.gen.id} | Safe: {connection.safe.id}")
 
     # --- 2. BUCLE PRINCIPAL (VIGILANCIA PERPETUA) ---
     while True:
@@ -52,9 +50,7 @@ def main():
             for coin in GENERATOR_COINS:
                 try:
                     # Pasamos el 'guardian' para que autorice o bloquee la operación
-                    strategy_generator(
-                        connection, brain, guardian, coin, sp500_data
-                    )
+                    strategy_generator(connection, brain, guardian, coin, sp500_data)
                 except Exception as e:
                     print(f"   ⚠️ Error analizando {coin}: {e}")
 
