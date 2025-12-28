@@ -52,10 +52,10 @@ def fetch_merged_data():
         df["ts"] = pd.to_datetime(df["ts"], unit="ms")
         df.set_index("ts", inplace=True)
         
-        # Limpieza inicial de zona horaria
         if df.index.tz is not None:
             df.index = df.index.tz_convert(None)
             
+        print(f"   ✅ Cripto descargado: {len(df)} filas.")
     except Exception as e:
         print(f"❌ Error Kraken: {e}")
         sys.exit(1)
@@ -63,11 +63,9 @@ def fetch_merged_data():
     print("⬇️  Intentando descargar S&P 500...")
     spx_close = None
     try:
-        # Descargamos periodo amplio para asegurar coincidencias
         spx = yf.download("^GSPC", period="2y", interval="1h", progress=False)
         
         if not spx.empty:
-            # Extracción segura de la columna Close
             if hasattr(spx.columns, "nlevels") and spx.columns.nlevels > 1:
                 spx_close = spx.xs("Close", axis=1, level=0).iloc[:, 0]
             elif "Close" in spx.columns:
@@ -76,31 +74,31 @@ def fetch_merged_data():
                 spx_close = spx.iloc[:, 0]
             
             spx_close.name = "sp500"
-            # Eliminar zona horaria para coincidir con Kraken
             if spx_close.index.tz is not None:
                 spx_close.index = spx_close.index.tz_convert(None)
+            
+            print(f"   ✅ S&P 500 descargado: {len(spx_close)} filas.")
 
     except Exception as e:
         print(f"⚠️ Fallo Yahoo ({e}).")
 
-    # Fusión
     if spx_close is not None:
         df = df.join(spx_close, how="left")
+        df["sp500"] = df["sp500"].ffill().bfill()
+        
+        if df["sp500"].isnull().sum() > (len(df) * 0.5):
+            print("⚠️ Demasiados huecos en S&P 500. Descartando datos macro reales.")
+            df["sp500"] = df["close"]
     else:
-        df["sp500"] = np.nan
-
-    # Rellenar huecos
-    df["sp500"] = df["sp500"].ffill()
-    df["sp500"] = df["sp500"].bfill()
-
-    # --- SALVAVIDAS FINAL ---
-    # Si después de todo la columna sigue vacía (por fechas no coincidentes),
-    # usamos el precio de cierre como dato sintético para no romper la IA.
-    if df["sp500"].isnull().all():
-        print("⚠️ AVISO: S&P 500 no sincronizó. Usando fallback (Close Price).")
+        print("⚠️ No se pudo obtener S&P 500. Usando fallback.")
         df["sp500"] = df["close"]
 
-    print(f"✅ Datos listos: {len(df)} filas.")
+    df.dropna(inplace=True)
+    
+    if len(df) < 100:
+        print("❌ Error: Pocos datos tras la fusión.")
+        sys.exit(1)
+        
     return df
 
 
@@ -109,63 +107,43 @@ def fetch_merged_data():
 # ==========================================
 def feature_engineering(df):
     print("🧪 Calculando indicadores...")
-    
-    # Copia para evitar advertencias de pandas
     df = df.copy()
 
-    # Técnico
     df["rsi"] = df.ta.rsi(close=df["close"], length=14)
     df["ema20"] = df.ta.ema(close=df["close"], length=20)
     df["atr"] = df.ta.atr(
         high=df["high"], low=df["low"], close=df["close"], length=14
     )
 
-    # Volumen
     df["obv"] = df.ta.obv(close=df["close"], volume=df["volume"])
     df["mfi"] = df.ta.mfi(
-        high=df["high"],
-        low=df["low"],
-        close=df["close"],
-        volume=df["volume"],
-        length=14,
+        high=df["high"], low=df["low"], close=df["close"], volume=df["volume"], length=14
     )
     df["vol_sma"] = df["volume"].rolling(20).mean()
     df["rvol"] = df["volume"] / df["vol_sma"]
 
-    # Macro
     df["corr_spx"] = df["close"].rolling(24).corr(df["sp500"])
 
-    # Limpieza de NaN
     df = df.ffill().bfill()
     df.dropna(inplace=True)
 
-    # Definir Target
     df["target"] = (df["close"].shift(-1) > df["close"]).astype(int)
     df.dropna(inplace=True)
 
-    # CHECK DE SEGURIDAD
-    if len(df) == 0:
-        print("❌ ERROR CRÍTICO: 0 datos tras limpieza.")
+    if len(df) < TIME_STEPS + 10:
+        print(f"❌ ERROR CRÍTICO: Solo quedan {len(df)} datos.")
         sys.exit(1)
 
-    # LISTA DE FEATURES (9 ENTRADAS)
     features_list = [
-        "rsi",
-        "ema20",
-        "atr",
-        "obv",
-        "mfi",
-        "rvol",
-        "close",
-        "sp500",
-        "corr_spx",
+        "rsi", "ema20", "atr", "obv", "mfi", "rvol", "close", "sp500", "corr_spx"
     ]
 
+    print(f"📊 Datos listos para entrenar: {len(df)} muestras.")
     return df[features_list].values, df["target"].values, len(features_list)
 
 
 # ==========================================
-# 3. CREACIÓN DE SECUENCIAS (MEMORIA)
+# 3. CREACIÓN DE SECUENCIAS
 # ==========================================
 def create_sequences(data, target, time_steps):
     Xs, ys = [], []
@@ -191,7 +169,7 @@ def train_pipeline():
     X_seq, y_seq = create_sequences(X_scaled, y, TIME_STEPS)
 
     if len(X_seq) == 0:
-        print("❌ Error: No hay secuencias suficientes.")
+        print("❌ Error: No hay suficientes datos para crear secuencias.")
         sys.exit(1)
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -203,7 +181,8 @@ def train_pipeline():
     model = tf.keras.Sequential(
         [
             tf.keras.Input(shape=(TIME_STEPS, input_dim)),
-            tf.keras.layers.LSTM(64, return_sequences=False),
+            # --- FIX CRÍTICO: unroll=True ---
+            tf.keras.layers.LSTM(64, return_sequences=False, unroll=True),
             tf.keras.layers.Dropout(0.3),
             tf.keras.layers.Dense(32, activation="relu"),
             tf.keras.layers.Dense(1, activation="sigmoid"),
@@ -232,7 +211,6 @@ def train_pipeline():
 def convert_to_rknn(tf_model, input_dim):
     print("\n🔄 EXPORTANDO MODELO...")
 
-    # --- FIX KERAS 3 ---
     if not hasattr(tf_model, "output_names"):
         if isinstance(tf_model.layers[-1].output, list):
              tf_model.output_names = [f"output_{i}" for i in range(len(tf_model.layers[-1].output))]
@@ -253,30 +231,21 @@ def convert_to_rknn(tf_model, input_dim):
 
     try:
         from rknn.api import RKNN
-
-        print("⚙️  Toolkit detectado. Convirtiendo...")
+        # Si estamos en Linux x86 con el toolkit, convertimos aquí
         rknn = RKNN(verbose=False)
         rknn.config(target_platform="rk3588")
-
-        if rknn.load_onnx(model=onnx_path) != 0:
-            print("❌ Error cargar ONNX")
-            return
-        if rknn.build(do_quantization=False) != 0:
-            print("❌ Error build RKNN")
-            return
-        if rknn.export_rknn(rknn_path) != 0:
-            print("❌ Error export RKNN")
-            return
-
-        print(f"\n🎉 ¡MADNESS (Memory Edition) GENERADO!: {rknn_path}")
+        if rknn.load_onnx(model=onnx_path) != 0: return
+        if rknn.build(do_quantization=False) != 0: return
+        if rknn.export_rknn(rknn_path) != 0: return
+        print(f"\n🎉 ¡MADNESS GENERADO!: {rknn_path}")
 
     except ImportError:
-        print("\n⚠️  Toolkit RKNN no encontrado en este PC.")
-        print(f"   Se ha generado el archivo intermedio: {onnx_path}")
-        print("   👉 Como estás en Mac, usa el comando Docker para convertir a .rknn")
+        print("\n⚠️  Toolkit RKNN no encontrado en Mac.")
+        print(f"   Se ha generado el archivo: {onnx_path}")
+        print("   👉 EJECUTA EL COMANDO DOCKER AHORA.")
 
-
+# --- PUNTO DE ENTRADA (ESTO ES LO QUE FALTABA) ---
 if __name__ == "__main__":
-    print("=== LULA TRAINER (LSTM Memory Edition) ===")
+    print("=== LULA TRAINER (LSTM Unrolled Edition) ===")
     model, features = train_pipeline()
     convert_to_rknn(model, features)
