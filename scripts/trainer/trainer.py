@@ -51,10 +51,10 @@ def fetch_merged_data():
         df = pd.DataFrame(bars, columns=["ts", "open", "high", "low", "close", "volume"])
         df["ts"] = pd.to_datetime(df["ts"], unit="ms")
         df.set_index("ts", inplace=True)
-        
+
         if df.index.tz is not None:
             df.index = df.index.tz_convert(None)
-            
+
         print(f"   ✅ Cripto descargado: {len(df)} filas.")
     except Exception as e:
         print(f"❌ Error Kraken: {e}")
@@ -64,7 +64,7 @@ def fetch_merged_data():
     spx_close = None
     try:
         spx = yf.download("^GSPC", period="2y", interval="1h", progress=False)
-        
+
         if not spx.empty:
             if hasattr(spx.columns, "nlevels") and spx.columns.nlevels > 1:
                 spx_close = spx.xs("Close", axis=1, level=0).iloc[:, 0]
@@ -72,11 +72,11 @@ def fetch_merged_data():
                 spx_close = spx["Close"]
             else:
                 spx_close = spx.iloc[:, 0]
-            
+
             spx_close.name = "sp500"
             if spx_close.index.tz is not None:
                 spx_close.index = spx_close.index.tz_convert(None)
-            
+
             print(f"   ✅ S&P 500 descargado: {len(spx_close)} filas.")
 
     except Exception as e:
@@ -85,7 +85,7 @@ def fetch_merged_data():
     if spx_close is not None:
         df = df.join(spx_close, how="left")
         df["sp500"] = df["sp500"].ffill().bfill()
-        
+
         if df["sp500"].isnull().sum() > (len(df) * 0.5):
             print("⚠️ Demasiados huecos en S&P 500. Descartando datos macro reales.")
             df["sp500"] = df["close"]
@@ -94,11 +94,11 @@ def fetch_merged_data():
         df["sp500"] = df["close"]
 
     df.dropna(inplace=True)
-    
+
     if len(df) < 100:
         print("❌ Error: Pocos datos tras la fusión.")
         sys.exit(1)
-        
+
     return df
 
 
@@ -111,9 +111,7 @@ def feature_engineering(df):
 
     df["rsi"] = df.ta.rsi(close=df["close"], length=14)
     df["ema20"] = df.ta.ema(close=df["close"], length=20)
-    df["atr"] = df.ta.atr(
-        high=df["high"], low=df["low"], close=df["close"], length=14
-    )
+    df["atr"] = df.ta.atr(high=df["high"], low=df["low"], close=df["close"], length=14)
 
     df["obv"] = df.ta.obv(close=df["close"], volume=df["volume"])
     df["mfi"] = df.ta.mfi(
@@ -134,9 +132,7 @@ def feature_engineering(df):
         print(f"❌ ERROR CRÍTICO: Solo quedan {len(df)} datos.")
         sys.exit(1)
 
-    features_list = [
-        "rsi", "ema20", "atr", "obv", "mfi", "rvol", "close", "sp500", "corr_spx"
-    ]
+    features_list = ["rsi", "ema20", "atr", "obv", "mfi", "rvol", "close", "sp500", "corr_spx"]
 
     print(f"📊 Datos listos para entrenar: {len(df)} muestras.")
     return df[features_list].values, df["target"].values, len(features_list)
@@ -172,9 +168,7 @@ def train_pipeline():
         print("❌ Error: No hay suficientes datos para crear secuencias.")
         sys.exit(1)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_seq, y_seq, test_size=0.2, shuffle=False
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X_seq, y_seq, test_size=0.2, shuffle=False)
 
     print(f"🧠 Construyendo LSTM (Input: {TIME_STEPS}x{input_dim})...")
 
@@ -189,9 +183,7 @@ def train_pipeline():
         ]
     )
 
-    model.compile(
-        optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
-    )
+    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
     print("🏃 Entrenando...")
     model.fit(
@@ -213,17 +205,16 @@ def convert_to_rknn(tf_model, input_dim):
 
     if not hasattr(tf_model, "output_names"):
         if isinstance(tf_model.layers[-1].output, list):
-             tf_model.output_names = [f"output_{i}" for i in range(len(tf_model.layers[-1].output))]
+            tf_model.output_names = [f"output_{i}" for i in range(len(tf_model.layers[-1].output))]
         else:
-             tf_model.output_names = ["output_0"]
+            tf_model.output_names = ["output_0"]
 
     onnx_path = os.path.join(DATA_DIR, f"{MODEL_NAME}.onnx")
     spec = (tf.TensorSpec((1, TIME_STEPS, input_dim), tf.float32, name="input"),)
 
-    model_proto, _ = tf2onnx.convert.from_keras(
-        tf_model, input_signature=spec, opset=13
-    )
+    model_proto, _ = tf2onnx.convert.from_keras(tf_model, input_signature=spec, opset=13)
     import onnx
+
     onnx.save(model_proto, onnx_path)
     print(f"✅ Modelo ONNX guardado: {onnx_path}")
 
@@ -231,18 +222,23 @@ def convert_to_rknn(tf_model, input_dim):
 
     try:
         from rknn.api import RKNN
+
         # Si estamos en Linux x86 con el toolkit, convertimos aquí
         rknn = RKNN(verbose=False)
         rknn.config(target_platform="rk3588")
-        if rknn.load_onnx(model=onnx_path) != 0: return
-        if rknn.build(do_quantization=False) != 0: return
-        if rknn.export_rknn(rknn_path) != 0: return
+        if rknn.load_onnx(model=onnx_path) != 0:
+            return
+        if rknn.build(do_quantization=False) != 0:
+            return
+        if rknn.export_rknn(rknn_path) != 0:
+            return
         print(f"\n🎉 ¡MADNESS GENERADO!: {rknn_path}")
 
     except ImportError:
         print("\n⚠️  Toolkit RKNN no encontrado en Mac.")
         print(f"   Se ha generado el archivo: {onnx_path}")
         print("   👉 EJECUTA EL COMANDO DOCKER AHORA.")
+
 
 # --- PUNTO DE ENTRADA (ESTO ES LO QUE FALTABA) ---
 if __name__ == "__main__":
