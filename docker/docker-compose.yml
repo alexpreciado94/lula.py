@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # --- 1. PROXY TOR (Anonimato) ---
+  tor-proxy:
+    image: dperson/torproxy
+    container_name: tor_service
+    ports:
+      - "8118:8118" # HTTP Proxy
+    environment:
+      - TOR_NewCircuitPeriod=120 # Cambiar IP cada 2 min
+    restart: always
+
+  # --- 2. NODO MONERO (Soberanía) ---
+  monero-node:
+    image: sethforprivacy/monero:latest
+    container_name: monero_node
+    restart: unless-stopped
+    volumes:
+      - ./data/monero_db:/home/monero/.bitmonero
+    # Modo "Pruned" (Podado) para que no llene el disco de la Orange Pi
+    command: --rpc-bind-ip=0.0.0.0 --rpc-bind-port=18081 --confirm-external-bind --prune-blockchain
+
+  # --- 3. LULA BOT (Inteligencia) ---
+  lula:
+    build: .
+    container_name: lula_brain
+    restart: always
+    depends_on:
+      - tor-proxy
+      - monero-node
+    devices:
+      - /dev/rknpu:/dev/rknpu # Acceso directo a NPU
+      - /dev/rga:/dev/rga     # Aceleración opcional
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs

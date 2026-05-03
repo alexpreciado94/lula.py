@@ -1,0 +1,76 @@
+# ==========================================================
+# LULA CA$H FLOW - ESTRUCTURA DE EXCLUSIÓN PROFESIONAL
+# ==========================================================
+
+# --- [1] ARCHIVOS COMPILADOS Y CACHÉ ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.ipynb_checkpoints
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- [2] SEGURIDAD (CRÍTICO: NUNCA SUBIR) ---
+# Archivos de entorno y variables secretas
+.env
+.envrc
+secrets.py
+local_settings.py
+
+# Certificados y Claves Privadas
+*.pem
+*.key
+*.pub
+lula_private.pem
+keys/
+
+# --- [3] MEMORIA Y ESTADO DEL SISTEMA ---
+# No queremos subir el estado de una sesión de trading a Git
+data/*.json
+data/*.sqlite3
+data/*.sqlite3-journal
+guardian_memory.json
+daily_state.json
+guardian_audit.json
+
+# --- [4] INTELIGENCIA ARTIFICIAL (Modelos Pesados) ---
+# Los modelos .rknn y scalers son archivos binarios grandes. 
+# Es mejor distribuirlos por fuera del repositorio.
+*.rknn
+*.onnx
+*.pkl
+*.joblib
+scaler.pkl
+
+# --- [5] LOGS Y AUDITORÍA ---
+*.log
+logs/
+pip-log.txt
+
+# --- [6] ENTORNOS VIRTUALES Y DOCKER ---
+.venv/
+venv/
+ENV/
+env/
+# Docker local data (si montas volúmenes fuera de /app/data)
+.docker/
+
+# --- [7] CONFIGURACIÓN DE IDE (VS Code / Cursor / PyCharm) ---
+.vscode/
+.idea/
+.cursor/
+.cursorignore
+.cursorindexingignore
+
+# --- [8] DATOS Y EXPORTACIONES ---
+*.csv
+*.xlsx
+*.parquet
+backtest_results/
+temp/
+
+# --- [9] SISTEMA OPERATIVO ---
+.DS_Store
+Thumbs.db
