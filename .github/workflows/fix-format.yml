@@ -31,7 +31,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🤖"
-          # Aquí forzamos que el nombre sea solo el emoji
-          commit_user_name: "🤖"
-          commit_user_email: "41898282+github-actions[bot]@://github.com"
-          commit_author: "🤖 <41898282+github-actions[bot]@://github.com>"
+          # Eliminamos las líneas de "commit_user_name" para que use el por defecto 
+          # o pon tus datos reales aquí:
+          commit_user_name: "alexpreciado94"
