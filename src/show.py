@@ -47,7 +47,8 @@ def clean_ansi(text):
 
 
 def pad(text, width, align="center"):
-    if text is None: text = "---"  # Protección contra nulos
+    if text is None:
+        text = "---"  # Protección contra nulos
     text = str(text)  # Asegurar que es string
     plain = clean_ansi(text)
     # Contar emojis de forma más precisa
@@ -142,10 +143,12 @@ def print_ui_header(vix, dxy, fng, cycle, total_equity, equity_init):
     l2 = f"  {C.W}╔" + "═" * W_BOX + "╗"
 
     # Línea 1: Info Sistema + Rendimiento
-    hw = (f"{C.P}💾 NPU:{C.G}OK{C.W} | {C.C}🌐 RED:{C.G}ACTIVA{C.W} | "
-          f"{C.Y}💰 CAP:{C.W}${total_equity:.2f} | "
-          f"{color_g}📈 {signo}${ganancia:.2f} ({pct:+.2f}%){C.W} | "
-          f"{C.M}🔄 C:#{cycle}")
+    hw = (
+        f"{C.P}💾 NPU:{C.G}OK{C.W} | {C.C}🌐 RED:{C.G}ACTIVA{C.W} | "
+        f"{C.Y}💰 CAP:{C.W}${total_equity:.2f} | "
+        f"{color_g}📈 {signo}${ganancia:.2f} ({pct:+.2f}%){C.W} | "
+        f"{C.M}🔄 C:#{cycle}"
+    )
 
     # Línea 2: Macro
     macro = f"{C.B}{C.W}📊 MACRO > {C.Y}VIX:{vix:.2f} {C.W}| {C.C}DXY:{dxy:.2f} {C.W}| {C.P}F&G:{fng} {C.W}| {C.RE}🔥 {get_npu_temp()}{C.W}"
@@ -155,20 +158,22 @@ def print_ui_header(vix, dxy, fng, cycle, total_equity, equity_init):
     l5 = f"  {C.W}╚" + "═" * W_BOX + "╝"
 
     headers = [
-        pad("ACTIVO",  W1 + 2),
-        pad("IA",      W2),
-        pad("RSI",     W3),
-        pad("IMBAL",   W4),
-        pad("SCORE",   W5),
-        pad("SALDO",   W6),
-        pad("PRECIO",  W7),   # ← NUEVA COLUMNA
-        pad("RIESGO",  W8),
-        pad("ESTADO",  W9),
+        pad("ACTIVO", W1 + 2),
+        pad("IA", W2),
+        pad("RSI", W3),
+        pad("IMBAL", W4),
+        pad("SCORE", W5),
+        pad("SALDO", W6),
+        pad("PRECIO", W7),  # ← NUEVA COLUMNA
+        pad("RIESGO", W8),
+        pad("ESTADO", W9),
     ]
     l6 = line("┌", "┬", "┐")
-    l7 = (f"  {C.GR}│ {C.B}{C.W}{headers[0]} {C.GR}│ {C.W}{headers[1]} {C.GR}│ {C.W}{headers[2]} "
-          f"{C.GR}│ {C.W}{headers[3]} {C.GR}│ {C.W}{headers[4]} {C.GR}│ {C.W}{headers[5]} "
-          f"{C.GR}│ {C.W}{headers[6]} {C.GR}│ {C.W}{headers[7]} {C.GR}│ {C.W}{headers[8]} {C.GR}│")
+    l7 = (
+        f"  {C.GR}│ {C.B}{C.W}{headers[0]} {C.GR}│ {C.W}{headers[1]} {C.GR}│ {C.W}{headers[2]} "
+        f"{C.GR}│ {C.W}{headers[3]} {C.GR}│ {C.W}{headers[4]} {C.GR}│ {C.W}{headers[5]} "
+        f"{C.GR}│ {C.W}{headers[6]} {C.GR}│ {C.W}{headers[7]} {C.GR}│ {C.W}{headers[8]} {C.GR}│"
+    )
     l8 = line("├", "┼", "┤")
 
     full_header = "\n".join([l1, l2, l3, l4, l5, l6, l7, l8])
@@ -182,9 +187,9 @@ def print_coin_row(symbol, prob, rsi, imb, score, val, risk, status, price=0.0):
     La columna PRECIO se inserta entre SALDO y RIESGO.
     """
     # Lógica de colores dinámica
-    c_rsi   = C.C if rsi < 40 else (C.RE if rsi > 70 else C.W)
+    c_rsi = C.C if rsi < 40 else (C.RE if rsi > 70 else C.W)
     c_score = C.G if score > 70 else (C.RE if score < 30 else C.W)
-    c_imb   = C.G if imb > 0.10 else (C.RE if imb < -0.20 else C.W)
+    c_imb = C.G if imb > 0.10 else (C.RE if imb < -0.20 else C.W)
 
     status_upper = status.upper()
     if "AHORROS" in status_upper:
@@ -211,17 +216,17 @@ def print_coin_row(symbol, prob, rsi, imb, score, val, risk, status, price=0.0):
 
     # Color del precio: cian neutro (es info, no señal)
     precio_str = format_price(price)
-    c_precio   = C.C if price > 0 else C.GR
+    c_precio = C.C if price > 0 else C.GR
 
     row_data = [
-        pad(f"{C.P}🧬 {C.W}{symbol}",      W1 + 2),
-        pad(f"{C.C}{prob:.4f}",             W2),
-        pad(f"{c_rsi}{int(rsi)}",           W3),
-        pad(f"{c_imb}{imb:+.2f}",           W4),
-        pad(f"{c_score}{score}",            W5),
-        pad(f"{C.G}$ {val:.2f}",            W6),
-        pad(f"{c_precio}{precio_str}",      W7),   # ← NUEVA COLUMNA
-        pad(f"{C.Y}{risk}{C.GR}/70",        W8),
+        pad(f"{C.P}🧬 {C.W}{symbol}", W1 + 2),
+        pad(f"{C.C}{prob:.4f}", W2),
+        pad(f"{c_rsi}{int(rsi)}", W3),
+        pad(f"{c_imb}{imb:+.2f}", W4),
+        pad(f"{c_score}{score}", W5),
+        pad(f"{C.G}$ {val:.2f}", W6),
+        pad(f"{c_precio}{precio_str}", W7),  # ← NUEVA COLUMNA
+        pad(f"{C.Y}{risk}{C.GR}/70", W8),
         pad(f"{stat_color}{status}", W9 - 1),
     ]
 

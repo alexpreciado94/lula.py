@@ -4,10 +4,21 @@ from datetime import datetime
 # XMR eliminado de GENERATOR_COINS — Binance no lo tiene desde 2024
 # Se gestiona exclusivamente desde connection.safe (CoinEx)
 GENERATOR_COINS = [
-    "BTC/USDT", "ETH/USDT", "SOL/USDT", "NEAR/USDT", "FET/USDT",
-    "PENDLE/USDT", "RENDER/USDT", "SUI/USDT",
-    "LINK/USDT", "AVAX/USDT", "POL/USDT", "XRP/USDT",
-    "PEPE/USDT", "ADA/USDT", "DOT/USDT"
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "NEAR/USDT",
+    "FET/USDT",
+    "PENDLE/USDT",
+    "RENDER/USDT",
+    "SUI/USDT",
+    "LINK/USDT",
+    "AVAX/USDT",
+    "POL/USDT",
+    "XRP/USDT",
+    "PEPE/USDT",
+    "ADA/USDT",
+    "DOT/USDT",
 ]
 
 TARGET_COIN = "XMR/USDT"  # Solo se opera desde CoinEx (connection.safe)
@@ -16,36 +27,43 @@ TARGET_COIN = "XMR/USDT"  # Solo se opera desde CoinEx (connection.safe)
 # UTILIDADES
 # =========================
 
+
 def normalize(val, min_v, max_v):
     if max_v - min_v == 0:
         return 0
     return max(0, min(1, (val - min_v) / (max_v - min_v)))
+
 
 def trend_filter(price, ema200=None):
     if ema200 is not None and price < ema200 * 0.985:
         return False
     return True
 
+
 def get_env_float(key, default):
     return float(os.getenv(key, default))
+
 
 # =========================
 # UMBRAL DINÁMICO
 # =========================
 
+
 def get_dynamic_threshold(vix=20.0, rvol=1.0):
-    base       = float(os.getenv("BUY_THRESHOLD_IA", 0.55))
+    base = float(os.getenv("BUY_THRESHOLD_IA", 0.55))
     vix_factor = max(0, (vix - 20) * 0.003)
-    rvol_factor= max(0, (rvol - 1.5) * 0.02)
+    rvol_factor = max(0, (rvol - 1.5) * 0.02)
     return min(base + vix_factor + rvol_factor, 0.28)
+
 
 # =========================
 # SCORE PROMETHEUS v7.7
 # =========================
 
+
 def calculate_weighted_score(prob, rsi, imbalance, rvol=1.0, vix=20.0):
     buy_threshold = float(os.getenv("BUY_THRESHOLD_IA", 0.55))
-    rsi_buy_zone  = float(os.getenv("RSI_BUY_ZONE", 40))
+    rsi_buy_zone = float(os.getenv("RSI_BUY_ZONE", 40))
     rsi_sell_zone = float(os.getenv("RSI_SELL_ZONE", 75))
 
     prob_n = min(1.0, prob / buy_threshold)
@@ -57,7 +75,7 @@ def calculate_weighted_score(prob, rsi, imbalance, rvol=1.0, vix=20.0):
     if rsi <= rsi_buy_zone:
         rsi_n += 0.15
 
-    imb_n  = (max(-0.5, min(0.5, imbalance)) + 0.5)
+    imb_n = max(-0.5, min(0.5, imbalance)) + 0.5
     rvol_n = (max(0.5, min(2.5, rvol)) - 0.5) / 2.0
 
     w_ia, w_rsi, w_imb, w_vol = 0.45, 0.25, 0.20, 0.10
@@ -65,16 +83,18 @@ def calculate_weighted_score(prob, rsi, imbalance, rvol=1.0, vix=20.0):
 
     return max(0, min(100, int(score_f * 100)))
 
+
 # =========================================================
 # LULA CA$H FLOW v7.7 - GESTIÓN DE RIESGO INTEGRADA
 # =========================================================
 
+
 def get_status_label(prob, score, ok_macro, val_usd, rsi, **kwargs):
     from show import C
 
-    symbol  = kwargs.get('symbol', "")
-    price   = kwargs.get('price', 0)
-    guardian = kwargs.get('guardian', None)
+    symbol = kwargs.get("symbol", "")
+    price = kwargs.get("price", 0)
+    guardian = kwargs.get("guardian", None)
 
     if "XMR" in symbol:
         return f"{C.C}💎 AHORROS{C.R}"
@@ -101,7 +121,7 @@ def get_status_label(prob, score, ok_macro, val_usd, rsi, **kwargs):
 
         # --- LÓGICA DE SALIDA POR ESTRATEGIA ---
         sell_threshold = float(os.getenv("SELL_THRESHOLD_IA", 0.38))
-        rsi_sell_zone  = float(os.getenv("RSI_SELL_ZONE", 75))
+        rsi_sell_zone = float(os.getenv("RSI_SELL_ZONE", 75))
 
         if rsi >= rsi_sell_zone or prob <= sell_threshold:
             return f"{C.RE}💥 VENTA{C.R}"
@@ -112,7 +132,7 @@ def get_status_label(prob, score, ok_macro, val_usd, rsi, **kwargs):
     # LÓGICA DE ENTRADA
     # =========================================================
     buy_threshold = float(os.getenv("BUY_THRESHOLD_IA", 0.55))
-    rsi_buy_zone  = float(os.getenv("RSI_BUY_ZONE", 40))
+    rsi_buy_zone = float(os.getenv("RSI_BUY_ZONE", 40))
 
     if prob >= buy_threshold and score >= 65:
         return f"{C.G}🚀 COMPRA{C.R}"
@@ -138,17 +158,18 @@ def get_status_label(prob, score, ok_macro, val_usd, rsi, **kwargs):
 # monto_tramo2=0 (entrada única, comportamiento anterior).
 # =========================================================
 
+
 def get_position_size(available_usdt, total_equity, current_val_usd, score, prob, **kwargs):
     """
     LULA v6.2 — Motor de tamaño dinámico para interés compuesto.
     """
     from sub import calculate_ia_weight
-    
+
     # 1. PESO POR TIER (Agresividad vs Capital)
     # Si tienes $300, cada apuesta es del 15% ($45).
     # Si tienes $20,000, cada apuesta baja al 5% ($1000) para mayor estabilidad.
     if total_equity < 1500:
-        pct_per_trade = 0.15 
+        pct_per_trade = 0.15
     elif total_equity < 10000:
         pct_per_trade = 0.08
     else:
@@ -156,12 +177,13 @@ def get_position_size(available_usdt, total_equity, current_val_usd, score, prob
 
     # 2. IA-WEIGHTING (0.0 a 1.0)
     weight = calculate_ia_weight(prob)
-    if weight <= 0: return 0, 0
+    if weight <= 0:
+        return 0, 0
 
     # 3. CÁLCULO NOMINAL
     # Monto = Capital Total * % del Tier * Confianza IA * Calidad del Score
     monto_base = total_equity * pct_per_trade * weight * (score / 100)
-    
+
     # Límite de seguridad: no usar más del disponible ni pasarse del 20% en un solo activo
     monto_base = min(monto_base, available_usdt * 0.95, (total_equity * 0.20) - current_val_usd)
 
@@ -174,7 +196,7 @@ def get_position_size(available_usdt, total_equity, current_val_usd, score, prob
     scale_thresh = float(os.getenv("SCALE_IN_THRESHOLD_HIGH", 0.75))
     if prob >= scale_thresh and (monto_base * 0.5) >= 11.0:
         return round(monto_base * 0.5, 2), round(monto_base * 0.5, 2)
-    
+
     return round(monto_base, 2), 0
 
 
@@ -189,6 +211,7 @@ def get_position_size(available_usdt, total_equity, current_val_usd, score, prob
 #   TWAP_DURATION_SEC = 300    (duración total en segundos, 5 min)
 # =========================================================
 
+
 def execute_twap(connection, symbol, total_amount_usd, price, label="TWAP"):
     """
     Ejecuta una compra grande mediante micro-órdenes equidistantes.
@@ -199,10 +222,10 @@ def execute_twap(connection, symbol, total_amount_usd, price, label="TWAP"):
     """
     import time as _time
 
-    twap_min    = get_env_float("TWAP_MIN_AMOUNT", 500.0)
-    n_slices    = int(get_env_float("TWAP_SLICES", 5))
-    duration    = get_env_float("TWAP_DURATION_SEC", 300.0)
-    min_op      = get_env_float("MIN_OP_USDT", 15.0)
+    twap_min = get_env_float("TWAP_MIN_AMOUNT", 500.0)
+    n_slices = int(get_env_float("TWAP_SLICES", 5))
+    duration = get_env_float("TWAP_DURATION_SEC", 300.0)
+    min_op = get_env_float("MIN_OP_USDT", 15.0)
 
     # Solo activar TWAP si el monto lo justifica
     if total_amount_usd < twap_min:
@@ -217,11 +240,13 @@ def execute_twap(connection, symbol, total_amount_usd, price, label="TWAP"):
             return 0.0
 
     # TWAP activo
-    monto_slice  = round(total_amount_usd / n_slices, 2)
+    monto_slice = round(total_amount_usd / n_slices, 2)
     sleep_between = duration / n_slices
-    ejecutado    = 0.0
+    ejecutado = 0.0
 
-    print(f"⏱️ TWAP {label}: {symbol} | ${total_amount_usd:.2f} en {n_slices} tramos × ${monto_slice:.2f} cada {sleep_between:.0f}s")
+    print(
+        f"⏱️ TWAP {label}: {symbol} | ${total_amount_usd:.2f} en {n_slices} tramos × ${monto_slice:.2f} cada {sleep_between:.0f}s"
+    )
 
     for i in range(n_slices):
         if monto_slice < min_op:
@@ -230,10 +255,10 @@ def execute_twap(connection, symbol, total_amount_usd, price, label="TWAP"):
         try:
             # Refrescamos precio en cada tramo para mejorar precio medio
             try:
-                ticker      = connection.gen.fetch_ticker(symbol)
-                live_price  = ticker.get("last", price)
+                ticker = connection.gen.fetch_ticker(symbol)
+                live_price = ticker.get("last", price)
             except:
-                live_price  = price
+                live_price = price
 
             qty = connection.gen.amount_to_precision(symbol, monto_slice / live_price)
             connection.gen.create_market_order(symbol, "buy", qty)
@@ -271,20 +296,23 @@ def execute_twap(connection, symbol, total_amount_usd, price, label="TWAP"):
 
 def manage_bridge(connection):
     try:
-        usdt    = connection.get_balance(connection.gen).get("USDT", {}).get("total", 0)
+        usdt = connection.get_balance(connection.gen).get("USDT", {}).get("total", 0)
         reserve = float(os.getenv("MIN_CASH_RESERVE", 100.0))
-        batch   = float(os.getenv("MIN_BRIDGE_BATCH", 50.0))
+        batch = float(os.getenv("MIN_BRIDGE_BATCH", 50.0))
         surplus = usdt - reserve
         if surplus >= batch:
             connection.bridge_transfer(
                 surplus,
                 os.getenv("REFUGE_USDT_DEPOSIT_ADDRESS"),
-                os.getenv("BRIDGE_NETWORK", "TRX")
+                os.getenv("BRIDGE_NETWORK", "TRX"),
             )
     except:
         pass
 
-def manage_wealth(connection, prob, rsi, price, ok_macro, score=0, riesgo_pct=35, vix=20.0, rvol=1.0):
+
+def manage_wealth(
+    connection, prob, rsi, price, ok_macro, score=0, riesgo_pct=35, vix=20.0, rvol=1.0
+):
     """Compra XMR en CoinEx cuando las condiciones son favorables."""
     try:
         usdt = connection.get_balance(connection.safe).get("USDT", {}).get("total", 0)
@@ -294,30 +322,36 @@ def manage_wealth(connection, prob, rsi, price, ok_macro, score=0, riesgo_pct=35
     except:
         pass
 
+
 def get_aggressive_allocation(symbol, score, prob, current_balances):
     UMBRAL_AGRESIVO = 85
     if score >= UMBRAL_AGRESIVO and prob > 0.15:
-        btc_val       = current_balances.get('BTC', 0)
-        eth_val       = current_balances.get('ETH', 0)
+        btc_val = current_balances.get("BTC", 0)
+        eth_val = current_balances.get("ETH", 0)
         extra_capital = (btc_val * 0.02) + (eth_val * 0.02)
         return True, extra_capital
     return False, 0.0
 
+
 def get_opportunity_weight(score, prob):
-    if score >= 80 and prob > 0.12: return "EXTREMA"
-    if score >= 72:                 return "ALTA"
-    if score >= 65:                 return "NORMAL"
+    if score >= 80 and prob > 0.12:
+        return "EXTREMA"
+    if score >= 72:
+        return "ALTA"
+    if score >= 65:
+        return "NORMAL"
     return "NULA"
+
 
 def calculate_rotation_amount(full_bal, prices_map, total_equity):
     """Rotación proporcional al patrimonio total."""
-    extra   = 0
-    anchors = ['ETH', 'BTC', 'SOL', 'NEAR']
-    min_op  = float(os.getenv("MIN_OP_USDT", 11.0))
+    extra = 0
+    anchors = ["ETH", "BTC", "SOL", "NEAR"]
+    min_op = float(os.getenv("MIN_OP_USDT", 11.0))
 
     for coin in anchors:
-        cantidad  = full_bal.get(coin, {}).get('total', 0)
-        precio    = prices_map.get(f"{coin}/USDT", 0)
+        cantidad = full_bal.get(coin, {}).get("total", 0)
+        precio = prices_map.get(f"{coin}/USDT", 0)
         valor_usd = cantidad * precio
         if valor_usd > (total_equity * 0.15):
             extra += valor_usd * 0.05

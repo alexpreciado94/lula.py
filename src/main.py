@@ -9,23 +9,31 @@ import sub
 
 warnings.filterwarnings("ignore")
 
+
 def start_web_server():
     from http.server import HTTPServer, SimpleHTTPRequestHandler
+
     class TinyHandler(SimpleHTTPRequestHandler):
-        def log_message(self, format, *args): return
+        def log_message(self, format, *args):
+            return
+
         def do_GET(self):
-            if self.path == '/favicon.ico':
+            if self.path == "/favicon.ico":
                 self.send_response(204)
                 self.end_headers()
                 return
-            try: return super().do_GET()
-            except (BrokenPipeError, ConnectionResetError): pass
+            try:
+                return super().do_GET()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+
     os.makedirs("/app/data", exist_ok=True)
     os.chdir("/app/data")
     try:
         server = HTTPServer(("0.0.0.0", 5000), TinyHandler)
         server.serve_forever()
-    except: pass
+    except:
+        pass
 
 
 def rotar_capital(connection, prices_map, full_bal, nivel_ataque):
@@ -35,17 +43,17 @@ def rotar_capital(connection, prices_map, full_bal, nivel_ataque):
     EXTREMA → 3.0% ETH + 2.0% BTC (máx $500 + $300)
     """
     liberado = 0.0
-    pct_eth  = 0.03 if nivel_ataque == "EXTREMA" else 0.015
-    pct_btc  = 0.02 if nivel_ataque == "EXTREMA" else 0.010
+    pct_eth = 0.03 if nivel_ataque == "EXTREMA" else 0.015
+    pct_btc = 0.02 if nivel_ataque == "EXTREMA" else 0.010
 
-    for coin, pct, cap in [('ETH', pct_eth, 500), ('BTC', pct_btc, 300)]:
+    for coin, pct, cap in [("ETH", pct_eth, 500), ("BTC", pct_btc, 300)]:
         try:
-            qty    = full_bal.get(coin, {}).get('total', 0)
+            qty = full_bal.get(coin, {}).get("total", 0)
             precio = prices_map.get(f"{coin}/USDT", 0)
-            valor  = qty * precio
+            valor = qty * precio
             if valor > 1000 and precio > 0:
                 monto = min(valor * pct, cap)
-                q     = connection.gen.amount_to_precision(f"{coin}/USDT", monto / precio)
+                q = connection.gen.amount_to_precision(f"{coin}/USDT", monto / precio)
                 connection.gen.create_market_order(f"{coin}/USDT", "sell", q)
                 liberado += monto
                 print(f"🔄 ROTACIÓN {coin}: -${monto:.2f} liberados")
@@ -62,9 +70,9 @@ def get_xmr_row(connection, ok_macro):
     """
     try:
         xmr_bal = connection.get_balance(connection.safe)
-        xmr_qty = xmr_bal.get('XMR', {}).get('total', 0) if xmr_bal else 0
-        ticker  = connection.safe.fetch_ticker("XMR/USDT")
-        xmr_p   = ticker.get('last', 0)
+        xmr_qty = xmr_bal.get("XMR", {}).get("total", 0) if xmr_bal else 0
+        ticker = connection.safe.fetch_ticker("XMR/USDT")
+        xmr_p = ticker.get("last", 0)
         xmr_val = xmr_qty * xmr_p
         return xmr_p, xmr_val
     except:
@@ -75,6 +83,7 @@ def get_xmr_row(connection, ok_macro):
 # RESET DIARIO — Persistencia del equity inicial por día
 # ─────────────────────────────────────────────────────────────
 DAILY_STATE_PATH = "/app/data/daily_state.json"
+
 
 def load_daily_state(current_equity):
     """
@@ -88,9 +97,11 @@ def load_daily_state(current_equity):
             with open(DAILY_STATE_PATH, "r") as f:
                 state = json.load(f)
             if state.get("date") == today:
-                print(f"📅 Sesión del día {today} restaurada. "
-                      f"Equity inicial: ${state['equity_init']:.2f} | "
-                      f"Ciclos previos: {state.get('cycle_offset', 0)}")
+                print(
+                    f"📅 Sesión del día {today} restaurada. "
+                    f"Equity inicial: ${state['equity_init']:.2f} | "
+                    f"Ciclos previos: {state.get('cycle_offset', 0)}"
+                )
                 return float(state["equity_init"]), int(state.get("cycle_offset", 0))
     except Exception as e:
         print(f"⚠️ Error leyendo estado diario: {e}")
@@ -136,7 +147,7 @@ def main():
     try:
         connection = DualExchangeManager()
         connection.revisar_log_ordenes(strat.GENERATOR_COINS)
-        brain    = Brain("/app/data/madness.rknn", "/app/data/scaler.pkl")
+        brain = Brain("/app/data/madness.rknn", "/app/data/scaler.pkl")
         guardian = Guardian()
         guardian.load_state()
     except Exception as e:
@@ -154,9 +165,9 @@ def main():
     threading.Thread(target=sub.start_web_server, daemon=True).start()
 
     # ─── Tiempos de ciclo ──────────────────────────────────────
-    SLEEP_NORMAL   = 600   # 10 min — sin actividad
-    SLEEP_POST_OP  = 15    # 15 seg — tras compra o venta
-    SLEEP_WATCHING = 60    # 1 min  — señal en ACECHO
+    SLEEP_NORMAL = 600  # 10 min — sin actividad
+    SLEEP_POST_OP = 15  # 15 seg — tras compra o venta
+    SLEEP_WATCHING = 60  # 1 min  — señal en ACECHO
     # ───────────────────────────────────────────────────────────
 
     MAX_ROTACIONES_POR_CICLO = 2
@@ -164,51 +175,65 @@ def main():
     cycle = 1 + cycle_offset  # Continúa desde donde se quedó hoy
     while True:
         try:
-            hubo_operacion   = False
-            hay_acecho       = False
+            hubo_operacion = False
+            hay_acecho = False
             rotaciones_ciclo = 0
 
             # ── Comprobación de reset diario al inicio de cada ciclo ──
-            equity_inicial, cycle = check_daily_reset(equity_inicial, cycle, 
-                                                       connection.get_total_equity_usd() or equity_inicial)
+            equity_inicial, cycle = check_daily_reset(
+                equity_inicial, cycle, connection.get_total_equity_usd() or equity_inicial
+            )
             # ──────────────────────────────────────────────────────────
 
             # 2. MACRO Y SALDOS
             guardian.actualizar_indicadores()
-            sp500        = connection.get_sp500_data()
-            full_bal     = connection.get_balance(connection.gen)
+            sp500 = connection.get_sp500_data()
+            full_bal = connection.get_balance(connection.gen)
             total_equity = connection.get_total_equity_usd()
-            usdt_free    = full_bal.get('USDT', {}).get('free', 0) if full_bal else 0
+            usdt_free = full_bal.get("USDT", {}).get("free", 0) if full_bal else 0
 
             # 3. SEGURIDAD
             ok_drawdown, _ = guardian.check_drawdown_safety(total_equity)
             ok_macro = (guardian.vix < 25 and guardian.dxy < 103) if ok_drawdown else False
 
-            header     = ui.print_ui_header(guardian.vix, guardian.dxy, guardian.fng, cycle, total_equity, equity_inicial)
+            header = ui.print_ui_header(
+                guardian.vix, guardian.dxy, guardian.fng, cycle, total_equity, equity_inicial
+            )
             web_buffer = (header or "") + "\n"
 
             # 4. RECOLECCIÓN — Solo GENERATOR_COINS (sin XMR, Binance no lo tiene)
             raw_market_data = connection.get_data_batch(strat.GENERATOR_COINS, limit=200)
-            prices_map      = {s: b[-1][4] for s, b in raw_market_data.items() if b}
+            prices_map = {s: b[-1][4] for s, b in raw_market_data.items() if b}
 
             # 5. INFERENCIA NPU
-            batch_input = [{'symbol': s, 'bars': b} for s, b in raw_market_data.items() if b]
-            ai_results  = brain.analyze_batch(batch_input, sp500)
+            batch_input = [{"symbol": s, "bars": b} for s, b in raw_market_data.items() if b]
+            ai_results = brain.analyze_batch(batch_input, sp500)
 
             # 6. PROCESAMIENTO DE SEÑALES
             analyzed_assets = []
             for symbol, (prob, rsi, price, rvol) in ai_results.items():
                 try:
-                    score = strat.calculate_weighted_score(prob, rsi, 0, rvol=rvol, vix=guardian.vix)
-                    bars  = next((item['bars'] for item in batch_input if item['symbol'] == symbol), [])
-                    analyzed_assets.append({
-                        'symbol': symbol, 'prob': prob, 'rsi': rsi, 'price': price,
-                        'rvol': rvol, 'score': score, 'bars': bars
-                    })
+                    score = strat.calculate_weighted_score(
+                        prob, rsi, 0, rvol=rvol, vix=guardian.vix
+                    )
+                    bars = next(
+                        (item["bars"] for item in batch_input if item["symbol"] == symbol), []
+                    )
+                    analyzed_assets.append(
+                        {
+                            "symbol": symbol,
+                            "prob": prob,
+                            "rsi": rsi,
+                            "price": price,
+                            "rvol": rvol,
+                            "score": score,
+                            "bars": bars,
+                        }
+                    )
                 except:
                     continue
 
-            analyzed_assets = sorted(analyzed_assets, key=lambda x: x['score'], reverse=True)
+            analyzed_assets = sorted(analyzed_assets, key=lambda x: x["score"], reverse=True)
 
             # ============================================================
             # 7. EJECUCIÓN — Motor de Trading v7.7
@@ -224,27 +249,42 @@ def main():
             # 1. Obtener datos macro y permiso (ahora pasando total_equity)
             btc_imb_global = connection.get_smart_imbalance("BTC/USDT")
             import feelings
+
             m_status, max_exp_pct, max_pos, current_tier = feelings.get_market_permission(
                 btc_imb_global, guardian.dxy, guardian.vix, guardian.fng, total_equity
             )
 
             # 2. Contar posiciones abiertas actualmente
-            posiciones_activas = len([s for s in guardian.posiciones if (full_bal.get(s.split("/")[0], {}).get("total", 0) * prices_map.get(s, 0)) > 5.0])
+            posiciones_activas = len(
+                [
+                    s
+                    for s in guardian.posiciones
+                    if (full_bal.get(s.split("/")[0], {}).get("total", 0) * prices_map.get(s, 0))
+                    > 5.0
+                ]
+            )
 
             for asset in analyzed_assets:
-                symbol, prob, rsi, price = asset['symbol'], asset['prob'], asset['rsi'], asset['price']
-                score, bars, rvol        = asset['score'], asset['bars'], asset['rvol']
-                
+                symbol, prob, rsi, price = (
+                    asset["symbol"],
+                    asset["prob"],
+                    asset["rsi"],
+                    asset["price"],
+                )
+                score, bars, rvol = asset["score"], asset["bars"], asset["rvol"]
+
                 # Datos de la posición actual (si existe)
                 pos_data = guardian.get_datos_posicion(symbol)
                 base_asset = symbol.split("/")[0].upper()
-                held       = full_bal.get(base_asset, {}).get("total", 0) if full_bal else 0
-                val_usd    = held * price
+                held = full_bal.get(base_asset, {}).get("total", 0) if full_bal else 0
+                val_usd = held * price
                 sin_posicion = val_usd < 16.0
 
                 # --- NUEVA MEJORA: EVALUAR SALIDA DE EMERGENCIA (DELTA IA / BREAKEVEN) ---
                 if not sin_posicion:
-                    debe_salir_ya, motivo_emergencia = guardian.evaluar_salida_emergencia(symbol, price, prob)
+                    debe_salir_ya, motivo_emergencia = guardian.evaluar_salida_emergencia(
+                        symbol, price, prob
+                    )
                     if debe_salir_ya:
                         try:
                             qty_v = connection.gen.amount_to_precision(symbol, held)
@@ -252,20 +292,29 @@ def main():
                             guardian.limpiar_posicion(symbol)
                             hubo_operacion = True
                             print(f"🚨 SALIDA EMERGENCIA: {symbol} | {motivo_emergencia}")
-                            continue # Pasamos al siguiente activo
+                            continue  # Pasamos al siguiente activo
                         except Exception as e:
                             print(f"⚠️ Error en salida emergencia {symbol}: {e}")
 
                 # Status label normal
-                imb    = connection.get_smart_imbalance(symbol)
-                ok_risk, risk_msg, riesgo_n = guardian.analizar_riesgo(connection, symbol, bars, (prob, rsi, price, rvol))
-                
-                status = strat.get_status_label(
-                    prob, score, (ok_macro and ok_risk), val_usd, rsi,
-                    symbol=symbol, price=price, guardian=guardian
+                imb = connection.get_smart_imbalance(symbol)
+                ok_risk, risk_msg, riesgo_n = guardian.analizar_riesgo(
+                    connection, symbol, bars, (prob, rsi, price, rvol)
                 )
 
-                if "ACECHO" in status: hay_acecho = True
+                status = strat.get_status_label(
+                    prob,
+                    score,
+                    (ok_macro and ok_risk),
+                    val_usd,
+                    rsi,
+                    symbol=symbol,
+                    price=price,
+                    guardian=guardian,
+                )
+
+                if "ACECHO" in status:
+                    hay_acecho = True
 
                 # --- SECCIÓN DE SALIDA POR ESTRATEGIA (NORMAL) ---
                 if val_usd > 5.0 and ("VENTA" in status or "STOP" in status or "SCORE" in status):
@@ -276,20 +325,25 @@ def main():
                         usdt_free += val_usd
                         hubo_operacion = True
                         print(f"{status}: {symbol} | Salida estratégica")
-                    except Exception as e: print(f"⚠️ Error en salida {symbol}: {e}")
+                    except Exception as e:
+                        print(f"⚠️ Error en salida {symbol}: {e}")
 
                 # --- SECCIÓN DE COMPRA (CON BLINDAJE v6.2) ---
                 if "🚀 COMPRA" in status and sin_posicion:
                     # 1. Comprobamos límite de posiciones del Tier
                     if posiciones_activas >= max_pos:
                         if cycle % 5 == 0:
-                            print(f"⏳ Límite de posiciones alcanzado para Tier {current_tier} ({max_pos})")
+                            print(
+                                f"⏳ Límite de posiciones alcanzado para Tier {current_tier} ({max_pos})"
+                            )
                         continue
-                        
+
                     # 2. Comprobamos freno de mano por riesgo global
                     if total_invertido > (total_equity * max_exp_pct):
                         if cycle % 5 == 0:
-                            print(f"🛡️ BLOQUEO RIESGO GLOBAL: {m_status} (Límite: {max_exp_pct*100}%)")
+                            print(
+                                f"🛡️ BLOQUEO RIESGO GLOBAL: {m_status} (Límite: {max_exp_pct*100}%)"
+                            )
                         continue
 
                     if usdt_free > 10.5:
@@ -300,13 +354,15 @@ def main():
 
                         if tramo1 >= 10.0:
                             try:
-                                ejecutado = strat.execute_twap(connection, symbol, tramo1, price, label="T1")
+                                ejecutado = strat.execute_twap(
+                                    connection, symbol, tramo1, price, label="T1"
+                                )
                                 if ejecutado > 0:
                                     # IMPORTANTE: Ahora pasamos 'prob' para el cálculo de Delta IA futuro
-                                    guardian.registrar_entrada(symbol, price, prob) 
+                                    guardian.registrar_entrada(symbol, price, prob)
                                     usdt_free -= ejecutado
                                     total_invertido += ejecutado
-                                    posiciones_activas += 1 # Actualizamos el contador
+                                    posiciones_activas += 1  # Actualizamos el contador
                                     hubo_operacion = True
 
                                     if tramo2 >= 10.0:
@@ -321,30 +377,40 @@ def main():
                     tramo2_pendiente = datos_pos.get("tramo2_pendiente", 0)
                     scale_threshold_high = float(os.getenv("SCALE_IN_THRESHOLD_HIGH", 0.75))
 
-                    if tramo2_pendiente >= 10.0 and prob >= scale_threshold_high and usdt_free > tramo2_pendiente:
+                    if (
+                        tramo2_pendiente >= 10.0
+                        and prob >= scale_threshold_high
+                        and usdt_free > tramo2_pendiente
+                    ):
                         try:
-                            ejecutado2 = strat.execute_twap(connection, symbol, tramo2_pendiente, price, label="T2")
+                            ejecutado2 = strat.execute_twap(
+                                connection, symbol, tramo2_pendiente, price, label="T2"
+                            )
                             if ejecutado2 > 0:
                                 usdt_free -= ejecutado2
                                 hubo_operacion = True
                                 guardian.posiciones[symbol].pop("tramo2_pendiente", None)
                                 guardian.save_state()
-                                print(f"  ↳ Scaling In T2 ejecutado: ${ejecutado2:.2f} @ ${price:.4f}")
+                                print(
+                                    f"  ↳ Scaling In T2 ejecutado: ${ejecutado2:.2f} @ ${price:.4f}"
+                                )
                         except Exception as e:
                             print(f"⚠️ Error en Tramo 2 {symbol}: {e}")
 
                 # ── Precio actual desde prices_map para la columna PRECIO ──
                 current_price = prices_map.get(symbol, price)
-                row = ui.print_coin_row(symbol, prob, rsi, imb, score, val_usd, riesgo_n, status,
-                                        price=current_price)
+                row = ui.print_coin_row(
+                    symbol, prob, rsi, imb, score, val_usd, riesgo_n, status, price=current_price
+                )
                 web_buffer += (row or "") + "\n"
 
             # ── Fila especial XMR ──
             try:
                 xmr_p, xmr_val = get_xmr_row(connection, ok_macro)
-                xmr_status      = strat.get_status_label(0, -1, ok_macro, xmr_val, 50, symbol="XMR/USDT")
-                row_xmr = ui.print_coin_row("XMR/USDT", 0.0, 50, 0.0, -1, xmr_val, 0, xmr_status,
-                                             price=xmr_p)
+                xmr_status = strat.get_status_label(0, -1, ok_macro, xmr_val, 50, symbol="XMR/USDT")
+                row_xmr = ui.print_coin_row(
+                    "XMR/USDT", 0.0, 50, 0.0, -1, xmr_val, 0, xmr_status, price=xmr_p
+                )
                 web_buffer += (row_xmr or "") + "\n"
             except:
                 pass
@@ -352,18 +418,18 @@ def main():
             # 8. SLEEP INTELIGENTE
             if hubo_operacion:
                 proximo_wake = time.time() + SLEEP_POST_OP
-                sleep_label  = f"⚡ Actualizando en {SLEEP_POST_OP}s"
-                sleep_dur    = SLEEP_POST_OP
+                sleep_label = f"⚡ Actualizando en {SLEEP_POST_OP}s"
+                sleep_dur = SLEEP_POST_OP
             elif hay_acecho:
                 proximo_wake = time.time() + SLEEP_WATCHING
-                sleep_label  = f"📡 Acecho activo — refresco en 1 min"
-                sleep_dur    = SLEEP_WATCHING
+                sleep_label = f"📡 Acecho activo — refresco en 1 min"
+                sleep_dur = SLEEP_WATCHING
             else:
                 proximo_wake = time.time() + SLEEP_NORMAL
-                sleep_label  = f"💤 REPOSO: 10 min"
-                sleep_dur    = SLEEP_NORMAL
+                sleep_label = f"💤 REPOSO: 10 min"
+                sleep_dur = SLEEP_NORMAL
 
-            wake_str    = time.strftime("%H:%M", time.localtime(proximo_wake))
+            wake_str = time.strftime("%H:%M", time.localtime(proximo_wake))
             footer_line = ui.print_ui_footer(wake_str)
             footer_real = footer_line.replace("💤 REPOSO: 10 min", sleep_label)
             ui.update_web_dashboard(web_buffer + (footer_real or ""))
@@ -371,11 +437,10 @@ def main():
             # 9. FINALIZACIÓN DE CICLO
             try:
                 reserva_cash = float(os.getenv("MIN_CASH_RESERVE", 100.0))
-                lote_bridge  = float(os.getenv("MIN_BRIDGE_BATCH", 50.0))
+                lote_bridge = float(os.getenv("MIN_BRIDGE_BATCH", 50.0))
                 if usdt_free > (reserva_cash + lote_bridge):
                     connection.bridge_transfer(
-                        usdt_free - reserva_cash,
-                        os.getenv("REFUGE_ADDR"), "TRX"
+                        usdt_free - reserva_cash, os.getenv("REFUGE_ADDR"), "TRX"
                     )
 
                 if xmr_p and xmr_p > 0:
@@ -396,6 +461,7 @@ def main():
             print(f"⚠️ Alerta de Sistema (Main Loop): {type(e).__name__} - {e}")
             print("⏳ Reintentando en 60 segundos...")
             time.sleep(60)
+
 
 if __name__ == "__main__":
     main()

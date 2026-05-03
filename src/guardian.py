@@ -10,15 +10,15 @@ import json
 class Guardian:
 
     def __init__(self):
-        self.posiciones = {} # { "BTC/USDT": {"precio_entrada": 60000, "max_alcanzado": 65000} }
+        self.posiciones = {}  # { "BTC/USDT": {"precio_entrada": 60000, "max_alcanzado": 65000} }
         self.log_path = "/app/data/guardian_audit.json"
         self._fng_cache = {"value": 50, "ts": 0}
         self._last_prices = {}
         self._ema200_data = {}  # {symbol: deque(maxlen=200)}
 
-        self.high_water_mark = 0.0      # Punto más alto del saldo
+        self.high_water_mark = 0.0  # Punto más alto del saldo
         self.max_drawdown_limit = 0.12  # v7.5: ampliado al 12% (era 10%)
-                                        # El 10% era demasiado estricto para crypto
+        # El 10% era demasiado estricto para crypto
 
         self.vix = 20.0
         self.dxy = 100.0
@@ -33,13 +33,14 @@ class Guardian:
             "ia_entrada": prob_ia,
             "ts": time.time(),
             "breakeven_activo": False,
-            "tramo2_pendiente": 0
+            "tramo2_pendiente": 0,
         }
         self.save_state()
-    
+
     def evaluar_salida_emergencia(self, symbol, current_price, current_prob):
         pos = self.posiciones.get(symbol)
-        if not pos: return False, ""
+        if not pos:
+            return False, ""
 
         # 1. Recuperamos datos base
         precio_ent = pos["precio_entrada"]
@@ -54,18 +55,18 @@ class Guardian:
 
         # --- MEJORA: ESCALERA DE PROTECCIÓN (Smart Trailing) ---
         # En lugar de solo Breakeven, creamos niveles de seguridad:
-        
-        stop_dinamico = None # El precio por debajo del cual vendemos
 
-        if rendimiento >= 0.08: # Si va ganando > 8% (Moon-shot)
+        stop_dinamico = None  # El precio por debajo del cual vendemos
+
+        if rendimiento >= 0.08:  # Si va ganando > 8% (Moon-shot)
             # Bloqueamos el 70% de la subida máxima (deja aire pero asegura mucho)
-            stop_dinamico = max_alc * 0.96 # Permite 4% de retroceso desde el pico
-        
-        elif rendimiento >= 0.04: # Si va ganando > 4%
+            stop_dinamico = max_alc * 0.96  # Permite 4% de retroceso desde el pico
+
+        elif rendimiento >= 0.04:  # Si va ganando > 4%
             # Aseguramos al menos un 2% de beneficio neto
             stop_dinamico = precio_ent * 1.02
-            
-        elif rendimiento >= 0.015: # El antiguo nivel de Breakeven
+
+        elif rendimiento >= 0.015:  # El antiguo nivel de Breakeven
             # Aseguramos salir en positivo (Breakeven + 0.5% para comisiones)
             stop_dinamico = precio_ent * 1.005
 
@@ -77,10 +78,10 @@ class Guardian:
         # Si la IA sigue siendo ULTRA-ALTA (>0.85), ignoramos pequeñas caídas
         # Pero si la IA cae mientras el precio lateraliza, salimos.
         delta = ia_ent - current_prob
-        if delta > 0.25: # IA se asusta
-            if rendimiento > 0.01: # Si ya hay algo de ganancia, cerramos ya
+        if delta > 0.25:  # IA se asusta
+            if rendimiento > 0.01:  # Si ya hay algo de ganancia, cerramos ya
                 return True, f"DELTA IA: Confianza bajó {delta:.2f} (Asegurando mini-profit)"
-            elif delta > 0.40: # Si la caída de IA es brutal, fuera aunque estemos en pérdidas
+            elif delta > 0.40:  # Si la caída de IA es brutal, fuera aunque estemos en pérdidas
                 return True, "DELTA IA CRÍTICO: Capitulación de señal"
 
         return False, "HOLD"
@@ -109,12 +110,12 @@ class Guardian:
         """Registra por qué el Guardian tomó una decisión."""
         try:
             entry = {
-                "ts":       time.strftime("%Y-%m-%d %H:%M:%S"),
-                "symbol":   symbol,
-                "riesgo":   score_riesgo,
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "symbol": symbol,
+                "riesgo": score_riesgo,
                 "permitido": ok,
-                "motivo":   msg,
-                "macro":    {"vix": round(self.vix, 2), "dxy": round(self.dxy, 2), "fng": self.fng}
+                "motivo": msg,
+                "macro": {"vix": round(self.vix, 2), "dxy": round(self.dxy, 2), "fng": self.fng},
             }
             with open(self.log_path, "a") as f:
                 f.write(json.dumps(entry) + "\n")
@@ -132,9 +133,7 @@ class Guardian:
         """
         try:
             macro = yf.download(
-                ["^VIX", "DX-Y.NYB"],
-                period="5d", interval="1d",
-                progress=False, threads=False
+                ["^VIX", "DX-Y.NYB"], period="5d", interval="1d", progress=False, threads=False
             )
             if not macro.empty:
                 self.vix = float(macro["Close"]["^VIX"].ffill().iloc[-1])
@@ -246,10 +245,10 @@ class Guardian:
 
         # 2. COMPONENTE MACRO v7.6 — Solo penaliza condiciones realmente malas
         r_macro = 0.0
-        r_macro += max(0, (self.vix - 18) * 0.8)   # VIX normal hasta 18
-        r_macro += max(0, (self.dxy - 99) * 1.2)   # DXY normal hasta 99
+        r_macro += max(0, (self.vix - 18) * 0.8)  # VIX normal hasta 18
+        r_macro += max(0, (self.dxy - 99) * 1.2)  # DXY normal hasta 99
         if self.fng < 25:
-            r_macro += (25 - self.fng) * 0.4       # Solo miedo extremo
+            r_macro += (25 - self.fng) * 0.4  # Solo miedo extremo
 
         # 3. DESCUENTO POR IA — máximo 10 puntos (antes 20, era demasiado)
         # prob=0.9 → -9pts | prob=0.5 → -5pts | prob=0.1 → -1pt
@@ -264,16 +263,16 @@ class Guardian:
         if not ok or riesgo_final > 55:
             try:
                 entry = {
-                    "ts":       time.time(),
-                    "sym":      symbol,
-                    "r":        riesgo_final,
-                    "r_macro":  round(r_macro, 2),
-                    "r_indiv":  round(r_individual, 2),
-                    "r_ext":    round(r_extension, 2),
-                    "vix":      round(self.vix, 2),
-                    "dxy":      round(self.dxy, 2),
-                    "fng":      self.fng,
-                    "prob":     round(prob, 4)
+                    "ts": time.time(),
+                    "sym": symbol,
+                    "r": riesgo_final,
+                    "r_macro": round(r_macro, 2),
+                    "r_indiv": round(r_individual, 2),
+                    "r_ext": round(r_extension, 2),
+                    "vix": round(self.vix, 2),
+                    "dxy": round(self.dxy, 2),
+                    "fng": self.fng,
+                    "prob": round(prob, 4),
                 }
                 with open(self.log_path, "a") as f:
                     f.write(json.dumps(entry) + "\n")
@@ -291,7 +290,7 @@ class Guardian:
         state = {
             "high_water_mark": self.high_water_mark,
             "ema200_data": {s: list(d) for s, d in self._ema200_data.items()},
-            "posiciones": self.posiciones  # Guardamos los precios de entrada
+            "posiciones": self.posiciones,  # Guardamos los precios de entrada
         }
         try:
             os.makedirs("/app/data", exist_ok=True)
@@ -303,30 +302,32 @@ class Guardian:
     def load_state(self):
         """Recupera la memoria al arrancar de forma segura."""
         path = "/app/data/guardian_memory.json"
-        
+
         # 1. Inicializamos con valores vacíos por seguridad
-        state = {} 
-        
+        state = {}
+
         if os.path.exists(path):
             try:
                 with open(path, "r") as f:
                     state = json.load(f)
-                
+
                 # Carga de datos antiguos
                 self.high_water_mark = state.get("high_water_mark", 0.0)
-                
+
                 # Recuperar EMAs
                 for s, d in state.get("ema200_data", {}).items():
                     self._ema200_data[s] = deque(d, maxlen=200)
-                
+
                 # 2. Recuperar POSICIONES (Precios de entrada para el Stop Loss)
                 self.posiciones = state.get("posiciones", {})
-                
-                print(f"🧠 Memoria recuperada. HWM: ${self.high_water_mark:,.2f} | Posiciones: {len(self.posiciones)}")
-                return # Salimos con éxito
+
+                print(
+                    f"🧠 Memoria recuperada. HWM: ${self.high_water_mark:,.2f} | Posiciones: {len(self.posiciones)}"
+                )
+                return  # Salimos con éxito
             except Exception as e:
                 print(f"⚠️ Error leyendo JSON de memoria: {e}")
-        
+
         # 3. Si llegamos aquí es porque no hay archivo o falló: Inicializamos limpio
         print("🆕 Guardian iniciado con memoria limpia.")
         self.posiciones = {}

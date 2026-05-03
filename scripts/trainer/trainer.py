@@ -11,16 +11,29 @@ from sklearn.model_selection import train_test_split
 # CONFIGURACIÓN SYMBOLS v7.5 (16 ACTIVOS)
 # ==========================================
 SYMBOLS = [
-    "BTC/USDT", "ETH/USDT", "SOL/USDT", "NEAR/USDT", "FET/USDT",
-    "PENDLE/USDT", "RENDER/USDT", "SUI/USDT", "LINK/USDT", "AVAX/USDT",
-    "POL/USDT", "XRP/USDT", "PEPE/USDT", "ADA/USDT", "DOT/USDT",
-    "XMR/USDT"  # <--- Agregada para la Bóveda de Riqueza
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "NEAR/USDT",
+    "FET/USDT",
+    "PENDLE/USDT",
+    "RENDER/USDT",
+    "SUI/USDT",
+    "LINK/USDT",
+    "AVAX/USDT",
+    "POL/USDT",
+    "XRP/USDT",
+    "PEPE/USDT",
+    "ADA/USDT",
+    "DOT/USDT",
+    "XMR/USDT",  # <--- Agregada para la Bóveda de Riqueza
 ]
 
 TIME_STEPS = 10
 EPOCHS = 50
 FEATURES = ["returns", "rsi", "volatility", "rvol", "corr_spx", "dist_ema"]
-INPUT_DIM = TIME_STEPS * len(FEATURES) # 60
+INPUT_DIM = TIME_STEPS * len(FEATURES)  # 60
+
 
 # ==========================================
 # 1. OBTENCIÓN DE DATOS
@@ -42,6 +55,7 @@ def fetch_sp500():
         print(f"   ⚠️  Fallo S&P 500 ({e}). Continuando sin macro.")
         return None
 
+
 def fetch_crypto(symbol):
     print(f"⬇️  Descargando {symbol}...")
     try:
@@ -57,6 +71,7 @@ def fetch_crypto(symbol):
         print(f"   ⚠️  Error {symbol}: {e}")
         return pd.DataFrame()
 
+
 # ==========================================
 # 2. FEATURE ENGINEERING (Sincronizado con Brain)
 # ==========================================
@@ -69,7 +84,7 @@ def build_features(df, sp500):
     df["rvol"] = (df["volume"] / df["vol_sma"]).fillna(1.0)
     df["ema200"] = df.ta.ema(length=200)
     df["dist_ema"] = ((df["close"] - df["ema200"]) / df["ema200"]).fillna(0)
-    
+
     if sp500 is not None:
         df = df.join(sp500, how="left").ffill().bfill()
         df["corr_spx"] = df["close"].rolling(24).corr(df["sp500"]).fillna(0)
@@ -80,6 +95,7 @@ def build_features(df, sp500):
     df["target"] = (df["close"].shift(-4) > df["close"] * 1.005).astype(int)
     return df.dropna(subset=FEATURES + ["target"])
 
+
 # ==========================================
 # 3. PIPELINE DE ENTRENAMIENTO
 # ==========================================
@@ -87,20 +103,21 @@ def run_pipeline():
     print("\n🚀 === LULA TRAINER v7.5 (MLP + MULTI-SCALER) ===\n")
     os.makedirs("data", exist_ok=True)
     sp500 = fetch_sp500()
-    
+
     scalers_dict = {}
     all_X, all_y = [], []
 
     for sym in SYMBOLS:
         df = fetch_crypto(sym)
-        if df.empty: continue
+        if df.empty:
+            continue
         df = build_features(df, sp500)
-        
+
         # --- FIX: ESCALADOR INDEPENDIENTE POR MONEDA ---
         s = MinMaxScaler()
         scaled_data = s.fit_transform(df[FEATURES])
-        scalers_dict[sym] = s # Guardamos en el diccionario
-        
+        scalers_dict[sym] = s  # Guardamos en el diccionario
+
         target = df["target"].values
         for i in range(len(scaled_data) - TIME_STEPS):
             # Aplanamos la secuencia (10x6 = 60 inputs)
@@ -110,7 +127,7 @@ def run_pipeline():
     # Guardar el diccionario de scalers
     joblib.dump(scalers_dict, "data/scaler.pkl")
     print(f"✅ Diccionario con {len(scalers_dict)} scalers guardado.")
-    
+
     X, y = np.array(all_X), np.array(all_y)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, shuffle=False)
 
@@ -124,18 +141,22 @@ def run_pipeline():
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
     model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
-    
+
     print("\n🧠 Entrenando Red Neuronal...")
-    model.fit(X_train, y_train, epochs=EPOCHS, batch_size=64, 
-              validation_data=(X_test, y_test), verbose=1)
+    model.fit(
+        X_train, y_train, epochs=EPOCHS, batch_size=64, validation_data=(X_test, y_test), verbose=1
+    )
 
     # Exportación a ONNX
     print("\n🔄 Exportando a ONNX...")
     spec = (tf.TensorSpec((1, INPUT_DIM), tf.float32, name="input"),)
-    tf2onnx.convert.from_keras(model, input_signature=spec, opset=11, output_path="data/madness.onnx")
-    
+    tf2onnx.convert.from_keras(
+        model, input_signature=spec, opset=11, output_path="data/madness.onnx"
+    )
+
     print("\n✨ PROCESO COMPLETADO ✨")
     print(f"Usa input_size_list=[[1, {INPUT_DIM}]] en el script de conversión RKNN.")
+
 
 if __name__ == "__main__":
     run_pipeline()
